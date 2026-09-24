@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+appsettings.Development.json
+.env
+*.pfx
+TestResults/
+coverage/
+.DS_Store
