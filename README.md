@@ -1,20 +1,9 @@
-# Backend
+# Unwalked: back-end
 
-ASP.NET Core (C#) + PostgreSQL/PostGIS. Places catalogue, recommendations, sync, achievement sharing.
+Back-end for the bachelor thesis "Mobile Application for Recommending New Places and Walking Routes Based on the Analysis of the User's Habitual Geography". Documentation and business analysis: [unwalked-thesis](https://github.com/tuiiis/unwalked-thesis).
 
-## Layout
+Planned stack: ASP.NET Core, PostgreSQL with PostGIS.
 
-| Path | Purpose |
-|---|---|
-| `src/` | Solution: Api, Application, Domain, Infrastructure |
-| `tests/` | Unit and integration tests — the Back-end criterion needs >= 70% coverage |
-| `db/migrations/` | DDL and EF Core migrations, versioned in git (Database criterion) |
-| `db/` | Data dictionary, ER diagram, seed scripts, roles and grants |
-| `api/` | OpenAPI 3.0 spec, Getting Started, integration tutorial, changelog (API documentation criterion) |
-| `docs/adr/` | Architecture decision records |
-| `deploy/` | Dockerfile, compose, cloud deployment docs (Cloud criterion) |
+## Status
 
-## Rules
-
-- Secrets never in the repo. Local: user-secrets / `.env` (gitignored). Cloud: platform secret store.
-- Every schema change is a migration in git, no manual edits on the server.
+Not started. Development is planned after the business analysis defence (November 2026).
