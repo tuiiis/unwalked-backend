@@ -106,6 +106,44 @@ The schema is in third normal form. Every non-key column depends on the whole ke
 | `recommendation_type` and `action` stay as checked text | They are closed sets fixed by the API contract. A lookup table would add joins and no new facts. The `CHECK` constraints keep them valid. |
 | `feedback_daily_total` repeats the shape of `recommendation_feedback` | It is a deliberate summary table, not a copy. Raw rows are moved into it, so each reaction is counted exactly once. |
 
+## Integrity and transactions
+
+Integrity is enforced by the database itself, so a bug in the API or a manual query cannot store an invalid row.
+
+| Rule | How |
+|---|---|
+| Every row is identified | Primary key on every table, natural keys such as `region.code`, `place.external_id` and `user_account.email` are unique |
+| References stay valid | Foreign keys on every link. Catalogue links use `RESTRICT`, so a category or region in use cannot be removed. Data owned by an account uses `CASCADE`, so deleting the account removes its cards. Reactions use `SET NULL` on category, so a retired category keeps the counts |
+| Values make sense | `CHECK` constraints on formats, ranges and closed lists: lowercase email, confidence between 0 and 1, positive pack size and version, a fixed set of recommendation types and actions, valid building footprints, non-blank names |
+| One current pack per region | Partial unique index `ux_region_pack_current` plus the trigger that retires the previous pack |
+| A reaction is counted once | Unique `event_id`. The phone resends the same id after a network error, and the API treats the duplicate as success |
+| One email, one account | Unique `user_account.email`. A race between two sign-ups ends with one account and a conflict for the other |
+
+Transactions follow the unit of work.
+
+| Operation | Transaction |
+|---|---|
+| One API request | One `SaveChanges` call, a single transaction at Read Committed, the PostgreSQL default |
+| Account deletion | One statement, cards go with it through the cascade |
+| `aggregate_feedback` | One statement that deletes raw reactions and upserts the daily totals, so a reaction is either raw or counted, never both or neither |
+| Seed scripts | All scripts of a folder run in one transaction. A failing script leaves the database as it was |
+| Catalogue load | Places and their alternate categories are copied in one transaction, so a region is never half loaded |
+
+## Data quality expectations
+
+| Table | Expectation | Checked by |
+|---|---|---|
+| `category` | Codes match the Overture taxonomy, lowercase with underscores | `CHECK`, reference seed |
+| `region` | Code is lowercase, name is not blank, bounds cover every place of the region | `CHECK`, catalogue loader |
+| `place` | Name is not blank, confidence between 0 and 1, location inside the region, primary category known | `CHECK`, foreign keys, catalogue loader |
+| `building` | Footprint is a valid polygon, external id is unique | `CHECK`, unique index |
+| `region_pack` | Version is positive and unique within the region, one current pack per region, size is positive, `sha256` is 64 lowercase hex characters | `CHECK`, unique indexes, trigger |
+| `user_account` | Email is lowercase and unique, password is stored only as a hash | `CHECK`, unique index, API |
+| `recommendation_feedback` | Type and action from the fixed list, date has day precision, no coordinates and no account | `CHECK`, schema has no such columns |
+| `feedback_daily_total` | Count is positive, one row per day, type, action and category | `CHECK`, unique index |
+
+Rows that break an expectation are rejected, not repaired. The catalogue loader skips such rows and reports how many it skipped.
+
 ## Server tables
 
 ### region
@@ -301,6 +339,16 @@ Nobody but the migrator can run `aggregate_feedback` or change region packs. Int
 
 Every script can run again without creating duplicates.
 
+The test data covers the cases the API and the reports must handle.
+
+| Case | Data |
+|---|---|
+| Account with several cards, with one card, with none | `ona`, `jonas`, `rasa` |
+| Reaction without a category | 10 of 80 reactions |
+| Every action | 34 accepted, 33 dismissed, 13 visited |
+| Range across two months and the aggregation cutoff | 1 October to 8 November 2026 |
+| Old and current pack of one region | Vilnius v1 and v2 |
+
 ## On-device database (Room)
 
 Room keeps the raw movement data and everything derived from it. Tables marked as planned are part of the design and will be added during client development.
@@ -415,3 +463,11 @@ A building without a named place is still a valid answer. The stay then counts t
 | Movement history stays on the phone | Room over SQLite. It works offline, needs no server and keeps the most sensitive data out of the backend |
 
 Document stores such as MongoDB were rejected because the catalogue is relational and its spatial support is limited to simpler queries. SpatiaLite on the server was rejected because it lacks roles and concurrent writers.
+
+## Schema versioning
+
+The schema changes only through EF Core migrations in `src/Unwalked.Infrastructure/Persistence/Migrations`. Each migration is a class with a timestamp, so the order is fixed and the history lives in Git. Views, the trigger, the procedure and role grants are written as SQL inside migrations, so they are versioned the same way as tables.
+
+A migration that adds a table or a view also grants rights on it to the right group role. `db/schema.sql` is regenerated from the migrations after every change and is never edited by hand.
+
+Applied migrations are recorded in `__EFMigrationsHistory`. Running `migrate` again applies only the missing ones.

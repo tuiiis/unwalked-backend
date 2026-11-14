@@ -37,7 +37,14 @@ Add test accounts, achievement cards, reactions and region packs.
 docker compose --profile test-data run --rm seed-test
 ```
 
-Load the Vilnius place catalogue from an Overture CSV. The folder is set by `PLACES_DATA_DIR`.
+The place catalogue is not stored in the repository. It is exported from the public Overture Maps release 2026-09-23.1 (CDLA-Permissive-2.0) for the Vilnius region bounds. The export needs [DuckDB](https://duckdb.org/docs/installation/) and network access.
+
+```bash
+mkdir -p ../data/out
+(cd ../data/out && duckdb < "$OLDPWD/tools/export-vilnius-places.sql")
+```
+
+Then load it. `PLACES_DATA_DIR` points to `../data/out` by default.
 
 ```bash
 docker compose --profile load run --rm load
@@ -68,6 +75,8 @@ The tools read the connection string from `ConnectionStrings__Unwalked`.
 ## Tests
 
 Unit tests use NUnit. Integration tests start PostGIS in Testcontainers, apply the migrations and the reference seed, and check the API together with database constraints, the trigger, the procedure, the views and role permissions.
+
+Requires the .NET SDK version from `global.json` (10.0.100 or a newer feature band) and Docker for Testcontainers.
 
 ```bash
 dotnet test
