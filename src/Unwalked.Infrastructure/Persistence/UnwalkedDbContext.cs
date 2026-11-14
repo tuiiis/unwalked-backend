@@ -11,6 +11,8 @@ public sealed class UnwalkedDbContext(DbContextOptions<UnwalkedDbContext> option
 {
     public DbSet<Place> Places => Set<Place>();
 
+    public DbSet<Building> Buildings => Set<Building>();
+
     public DbSet<Category> Categories => Set<Category>();
 
     public DbSet<Region> Regions => Set<Region>();

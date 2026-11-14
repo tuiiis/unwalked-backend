@@ -1,6 +1,6 @@
 # Data dictionary
 
-Unwalked keeps data in two places. Movement history never leaves the phone. It lives in an on-device Room (SQLite) database. The server runs PostgreSQL 17 with PostGIS 3.5. It stores the shared place catalogue, the downloadable region packs, accounts used only for sharing achievements, and anonymous reactions to recommendations.
+Unwalked keeps data in two places. Movement history never leaves the phone. It lives in an on-device Room (SQLite) database. The server runs PostgreSQL 17 with PostGIS 3.5. It stores the shared place and building catalogue, the downloadable region packs, accounts used only for sharing achievements, and anonymous reactions to recommendations.
 
 The server schema is created by EF Core migrations in `src/Unwalked.Infrastructure/Persistence/Migrations`. The same DDL as a plain SQL script is in [db/schema.sql](../../db/schema.sql).
 
@@ -9,6 +9,7 @@ The server schema is created by EF Core migrations in `src/Unwalked.Infrastructu
 ```mermaid
 erDiagram
     region ||--o{ place : contains
+    region ||--o{ building : contains
     region ||--o{ region_pack : "published as"
     category ||--o{ place : "primary category of"
     place ||--o{ place_alternate_category : has
@@ -46,6 +47,14 @@ erDiagram
         bigint h3_r11
         integer region_id FK
         integer primary_category_id FK
+        varchar opening_hours
+    }
+    building {
+        bigint id PK
+        varchar external_id UK
+        geography footprint
+        bigint h3_r11
+        integer region_id FK
     }
     place_alternate_category {
         bigint place_id PK, FK
@@ -92,7 +101,8 @@ The schema is in third normal form. Every non-key column depends on the whole ke
 |---|---|
 | Categories are a reference table | A place has one primary category and any number of alternate ones. Storing codes inline would repeat the same string thousands of times and allow typos. |
 | Alternate categories are a separate link table | A list column would break the first normal form. |
-| Regions are a reference table | Places and region packs both belong to a region. The region name and bounds are stored once. |
+| Regions are a reference table | Places, buildings and region packs all belong to a region. The region name and bounds are stored once. |
+| A place has no `building_id` | The building of a place follows from its location and the building footprint. Storing it would duplicate a fact that geometry already gives and could drift when either catalogue is reloaded. |
 | `recommendation_type` and `action` stay as checked text | They are closed sets fixed by the API contract. A lookup table would add joins and no new facts. The `CHECK` constraints keep them valid. |
 | `feedback_daily_total` repeats the shape of `recommendation_feedback` | It is a deliberate summary table, not a copy. Raw rows are moved into it, so each reaction is counted exactly once. |
 
@@ -147,6 +157,19 @@ A point of interest from Overture Places (CDLA-Permissive 2.0).
 | h3_r11 | bigint | no | H3 cell at resolution 11 that contains the place |
 | region_id | integer | no | Region, `ON DELETE RESTRICT` |
 | primary_category_id | integer | no | Main category, `ON DELETE RESTRICT` |
+| opening_hours | varchar(255) | yes | Opening hours in OpenStreetMap `opening_hours` syntax, for example `Mo-Fr 08:00-20:00`. Taken from OSM (ODbL) where a matching object exists. Null when unknown, never blank |
+
+### building
+
+A building footprint from Overture Buildings, which is mostly derived from OpenStreetMap (ODbL). The phone uses footprints to decide which building a stay happened in.
+
+| Column | Type | Null | Description |
+|---|---|---|---|
+| id | bigint identity | no | Primary key |
+| external_id | varchar(64) | no | Overture identifier. Unique, used to reload without duplicates |
+| footprint | geography(multipolygon, 4326) | no | Outline of the building. Must be a valid geometry |
+| h3_r11 | bigint | no | H3 cell at resolution 11 that contains the centroid. Used to split footprints into pack buckets |
+| region_id | integer | no | Region, `ON DELETE RESTRICT` |
 
 ### place_alternate_category
 
@@ -216,11 +239,13 @@ The combination of day, type, action and category is unique, with `NULLS NOT DIS
 |---|---|
 | `ix_place_location` (GiST) | Radius search for places near a point |
 | `ix_place_h3_r11` | Places inside the H3 cells of a route or an unvisited area |
+| `ix_building_footprint` (GiST) | Building that contains or is nearest to a point |
+| `ix_building_h3_r11` | Footprints of one H3 bucket when a region pack is built |
 | `ix_place_alternate_category_category_id_place_id` | Filter places by category |
 | `ix_recommendation_feedback_received_on_recommendation_type` | Statistics for a date range |
 | `ux_region_pack_current` (partial, `WHERE is_current`) | Guarantees one current pack per region |
 | `ux_feedback_daily_total_day_type_action_category` (`NULLS NOT DISTINCT`) | Target of the upsert in `aggregate_feedback` |
-| Unique indexes on natural keys | `region.code`, `category.code`, `place.external_id`, `user_account.email`, `recommendation_feedback.event_id`, `region_pack.object_key`, `region_pack (region_id, version)` |
+| Unique indexes on natural keys | `region.code`, `category.code`, `place.external_id`, `building.external_id`, `user_account.email`, `recommendation_feedback.event_id`, `region_pack.object_key`, `region_pack (region_id, version)` |
 | Indexes on foreign keys | Fast cascades and joins |
 
 ## Views
@@ -228,7 +253,7 @@ The combination of day, type, action and category is unique, with `NULLS NOT DIS
 | View | Readable by | Content |
 |---|---|---|
 | `v_region_pack_index` | `app_read` | Current pack of every region with the region code, name and bounds |
-| `v_place_detail` | `app_read` | Place with its region code and primary category code |
+| `v_place_detail` | `app_read` | Place with its region code, primary category code and opening hours |
 | `v_user_account_masked` | `app_analyst` | Accounts with a masked email such as `o***@example.test` and the number of published cards. Created with `security_barrier` |
 | `v_feedback_summary` | `app_analyst` | Reaction counts by type and action, raw and aggregated together |
 
@@ -247,10 +272,10 @@ The application never connects as a superuser or as the schema owner. Each login
 | Role | Login | Rights |
 |---|---|---|
 | `unwalked_migrator` | yes | Member of `admin`. Creates and owns the tables, runs migrations, seeds and the catalogue loader |
-| `app_read` | no | `SELECT` on catalogue, region, pack, account, share and feedback tables and the API views |
+| `app_read` | no | `SELECT` on catalogue, building, region, pack, account, share and feedback tables and the API views |
 | `app_write` | no | Member of `app_read`. `INSERT`, `DELETE` on `user_account` and `achievement_share`, `INSERT` on `recommendation_feedback` |
 | `unwalked_api` | yes | Member of `app_write`. Used by the API |
-| `app_analyst` | no | `SELECT` on `category`, `recommendation_feedback`, `feedback_daily_total`, `v_feedback_summary` and `v_user_account_masked`. No access to `user_account`, `achievement_share` or `place` |
+| `app_analyst` | no | `SELECT` on `category`, `recommendation_feedback`, `feedback_daily_total`, `v_feedback_summary` and `v_user_account_masked`. No access to `user_account`, `achievement_share`, `place` or `building` |
 | `unwalked_analyst` | yes | Member of `app_analyst`. Used for research queries |
 | `admin` | no | Full rights on the schema |
 
@@ -261,6 +286,7 @@ Nobody but the migrator can run `aggregate_feedback` or change region packs. Int
 | Data | Where | Protection |
 |---|---|---|
 | Location history | Phone only | Never sent to the server |
+| Stay matches and Wi-Fi fingerprints | Phone only | Never sent to the server. Access point identifiers are stored as salted hashes |
 | Email | `user_account.email` | Hidden from analysts by `v_user_account_masked`, removed with the account |
 | Password | `user_account.password_hash` | Salted PBKDF2 hash, never readable by analysts |
 | Achievement card | `achievement_share.image` | Home area blurred on the phone before upload, removed with the account |
@@ -305,6 +331,11 @@ A place where the person stayed for a while, detected from consecutive points.
 | lon | REAL | no | Centre longitude |
 | points | INTEGER | no | Number of fixes that formed the stay |
 | source | TEXT | no | Detection method |
+| radius | REAL | no | Planned. Radius in metres that holds most fixes of the stay, at least the median accuracy |
+| buildingId | INTEGER | yes | Planned. `building.id` from the installed pack chosen for the stay |
+| placeId | INTEGER | yes | Planned. `place.id` from the installed pack chosen for the stay |
+| confidence | REAL | yes | Planned. Score of the chosen candidate from 0 to 1 |
+| confirmed | INTEGER | no | Planned. 1 when the person confirmed or corrected the match, otherwise 0 |
 
 ### cell
 
@@ -337,3 +368,50 @@ Diagnostic log of the background collection service, kept to debug Doze and vend
 | `recommendation` | Recommendations shown to the person, with type, target and the reaction, kept until the reaction is sent |
 | `achievement` | Earned achievements with the date and whether the card was shared |
 | `home_zone` | Area blurred on shared cards |
+| `stay_candidate` | Buildings and places that could explain a stay, see below |
+| `wifi_print` | Wi-Fi fingerprint of a stay, see below |
+
+### stay_candidate (planned)
+
+One possible explanation of a stay. Several rows are kept per stay, so a correction can pick another one without a new search.
+
+| Column | Type | Null | Description |
+|---|---|---|---|
+| stayId | INTEGER | no | Stay, part of the primary key, deleted with the stay |
+| kind | TEXT | no | `place` or `building`, part of the primary key |
+| targetId | INTEGER | no | `place.id` or `building.id` from the installed pack, part of the primary key |
+| score | REAL | no | Combined score from 0 to 1 |
+| rank | INTEGER | no | Position in the list shown to the person, starting at 1 |
+
+### wifi_print (planned)
+
+Access points seen during a stay. A later stay with a similar set is matched to the same place without GPS.
+
+| Column | Type | Null | Description |
+|---|---|---|---|
+| stayId | INTEGER | no | Stay, part of the primary key, deleted with the stay |
+| bssidHash | TEXT | no | Salted SHA-256 of the access point MAC address, part of the primary key. The salt never leaves the phone |
+| rssi | INTEGER | no | Strongest signal level seen, dBm |
+
+## Matching a stay to a building and a place
+
+The phone works out where a stay happened without sending anything to the server. The installed region pack already holds the places, their opening hours and the building footprints of the area, bucketed by H3 resolution 11 cell.
+
+1. Candidates are every building whose footprint lies within the stay radius plus 30 metres, and every place inside those buildings or within the same distance.
+2. Each candidate gets a score from the distance to the stay centre, the overlap of the stay circle with the footprint, whether the place was open during the stay, how well the duration and time of day fit the category, the activity before the stay (a long walk ending at a stop suggests a shop rather than an office), and the confidence from Overture.
+3. Previous stays of the same person count most. A Wi-Fi fingerprint that matches a confirmed stay, or a candidate the person already confirmed nearby, raises the score sharply.
+4. The best candidate is stored on the stay. When its score is low or two candidates are close, the app asks the person to choose. The answer sets `confirmed`, and later stays near it inherit the choice.
+5. Repeated long night stays and repeated weekday stays are recognised as home and work. They are kept out of recommendations and blurred on shared cards.
+
+A building without a named place is still a valid answer. The stay then counts towards the heat map and novelty but not towards place statistics.
+
+## Choice of database
+
+| Requirement | Choice |
+|---|---|
+| Spatial queries on places and buildings: radius, containment, nearest | PostgreSQL with PostGIS. The `geography` type works in metres on the sphere, and GiST indexes serve the queries above |
+| Integrity of a shared catalogue | Foreign keys, check constraints, unique natural keys and roles with least privilege are native in PostgreSQL |
+| Free hosting for the thesis | Managed PostgreSQL with PostGIS is available on free tiers, and the same image runs in Docker for development and tests |
+| Movement history stays on the phone | Room over SQLite. It works offline, needs no server and keeps the most sensitive data out of the backend |
+
+Document stores such as MongoDB were rejected because the catalogue is relational and its spatial support is limited to simpler queries. SpatiaLite on the server was rejected because it lacks roles and concurrent writers.

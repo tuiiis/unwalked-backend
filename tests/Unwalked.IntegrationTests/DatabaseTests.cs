@@ -90,6 +90,69 @@ public class DatabaseTests
     }
 
     [Test]
+    public async Task Region_WithBuildingsCannotBeDeleted()
+    {
+        var region = await CreateRegionAsync();
+        await InsertBuildingAsync(region, "SRID=4326;MULTIPOLYGON(((0.1 0.1, 0.2 0.1, 0.2 0.2, 0.1 0.2, 0.1 0.1)))");
+
+        var error = await CatchAsync(PostgisEnvironment.MigratorConnectionString, $"DELETE FROM region WHERE code = '{region}'");
+
+        Assert.That(error.SqlState, Is.EqualTo(PostgresErrorCodes.ForeignKeyViolation));
+        Assert.That(error.ConstraintName, Is.EqualTo("fk_building_region"));
+    }
+
+    [Test]
+    public async Task Building_RejectsSelfIntersectingFootprint()
+    {
+        var region = await CreateRegionAsync();
+
+        var error = await CatchAsync(
+            PostgisEnvironment.MigratorConnectionString,
+            BuildingInsertSql(region, "SRID=4326;MULTIPOLYGON(((0.1 0.1, 0.2 0.2, 0.2 0.1, 0.1 0.2, 0.1 0.1)))"));
+
+        Assert.That(error.SqlState, Is.EqualTo(PostgresErrorCodes.CheckViolation));
+        Assert.That(error.ConstraintName, Is.EqualTo("ck_building_footprint_valid"));
+    }
+
+    [Test]
+    public async Task ApiLogin_FindsBuildingContainingStay()
+    {
+        var region = await CreateRegionAsync();
+        var externalId = await InsertBuildingAsync(region, "SRID=4326;MULTIPOLYGON(((0.3 0.3, 0.3004 0.3, 0.3004 0.3004, 0.3 0.3004, 0.3 0.3)))");
+
+        var found = await ScalarAsync<string>(
+            PostgisEnvironment.ApiConnectionString,
+            "SELECT external_id FROM building WHERE ST_Intersects(footprint, 'SRID=4326;POINT(0.3002 0.3002)'::geography)");
+
+        Assert.That(found, Is.EqualTo(externalId));
+    }
+
+    [Test]
+    public async Task PlaceDetail_ExposesOpeningHours()
+    {
+        await ExecuteAsync(
+            PostgisEnvironment.MigratorConnectionString,
+            "UPDATE place SET opening_hours = 'Mo-Fr 08:00-20:00' WHERE id = (SELECT min(id) FROM place)");
+
+        var hours = await ScalarAsync<string>(
+            PostgisEnvironment.ApiConnectionString,
+            "SELECT opening_hours FROM v_place_detail WHERE id = (SELECT min(id) FROM place)");
+
+        Assert.That(hours, Is.EqualTo("Mo-Fr 08:00-20:00"));
+    }
+
+    [Test]
+    public async Task Place_RejectsBlankOpeningHours()
+    {
+        var error = await CatchAsync(
+            PostgisEnvironment.MigratorConnectionString,
+            "UPDATE place SET opening_hours = '  ' WHERE id = (SELECT min(id) FROM place)");
+
+        Assert.That(error.SqlState, Is.EqualTo(PostgresErrorCodes.CheckViolation));
+        Assert.That(error.ConstraintName, Is.EqualTo("ck_place_opening_hours_not_blank"));
+    }
+
+    [Test]
     public async Task DeletingAccount_RemovesItsShares()
     {
         var owner = Guid.NewGuid();
@@ -188,6 +251,19 @@ public class DatabaseTests
             SELECT gen_random_uuid(), '{type}', '{action}', {categoryId}, '{day}' FROM generate_series(1, {count})
             """);
     }
+
+    private static async Task<string> InsertBuildingAsync(string region, string footprint)
+    {
+        var externalId = $"bld-{Guid.NewGuid():N}";
+        await ExecuteAsync(PostgisEnvironment.MigratorConnectionString, BuildingInsertSql(region, footprint, externalId));
+        return externalId;
+    }
+
+    private static string BuildingInsertSql(string region, string footprint, string? externalId = null) =>
+        $"""
+        INSERT INTO building (external_id, footprint, h3_r11, region_id)
+        SELECT '{externalId ?? $"bld-{Guid.NewGuid():N}"}', '{footprint}', 0, id FROM region WHERE code = '{region}'
+        """;
 
     private static async Task<string> CreateRegionAsync()
     {

@@ -7,6 +7,7 @@ public sealed class Place
 {
     public const int MaxNameLength = 300;
     public const int MaxExternalIdLength = 64;
+    public const int MaxOpeningHoursLength = 255;
 
     public long Id { get; set; }
 
@@ -19,6 +20,8 @@ public sealed class Place
     public required Point Location { get; set; }
 
     public long H3R11 { get; set; }
+
+    public string? OpeningHours { get; set; }
 
     public int RegionId { get; set; }
 

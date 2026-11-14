@@ -12,6 +12,7 @@ public sealed class PlaceConfiguration : IEntityTypeConfiguration<Place>
         {
             table.HasCheckConstraint("ck_place_confidence_range", "confidence BETWEEN 0 AND 1");
             table.HasCheckConstraint("ck_place_name_not_blank", "btrim(name) <> ''");
+            table.HasCheckConstraint("ck_place_opening_hours_not_blank", "opening_hours IS NULL OR btrim(opening_hours) <> ''");
         });
         builder.HasKey(place => place.Id);
         builder.Property(place => place.ExternalId).HasMaxLength(Place.MaxExternalIdLength).IsRequired();
@@ -19,6 +20,7 @@ public sealed class PlaceConfiguration : IEntityTypeConfiguration<Place>
         builder.Property(place => place.Confidence).HasPrecision(4, 3);
         builder.Property(place => place.Location).HasColumnType("geography (point, 4326)").IsRequired();
         builder.Property(place => place.H3R11).HasColumnName("h3_r11");
+        builder.Property(place => place.OpeningHours).HasMaxLength(Place.MaxOpeningHoursLength);
 
         builder.HasIndex(place => place.ExternalId).IsUnique();
         builder.HasIndex(place => place.Location).HasMethod("gist");

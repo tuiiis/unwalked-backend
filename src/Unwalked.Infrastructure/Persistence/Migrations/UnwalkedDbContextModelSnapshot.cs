@@ -132,6 +132,58 @@ namespace Unwalked.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unwalked.Domain.Places.Building", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("external_id");
+
+                    b.Property<MultiPolygon>("Footprint")
+                        .IsRequired()
+                        .HasColumnType("geography (multipolygon, 4326)")
+                        .HasColumnName("footprint");
+
+                    b.Property<long>("H3R11")
+                        .HasColumnType("bigint")
+                        .HasColumnName("h3_r11");
+
+                    b.Property<int>("RegionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("region_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_building");
+
+                    b.HasIndex("ExternalId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_building_external_id");
+
+                    b.HasIndex("Footprint")
+                        .HasDatabaseName("ix_building_footprint");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Footprint"), "gist");
+
+                    b.HasIndex("H3R11")
+                        .HasDatabaseName("ix_building_h3_r11");
+
+                    b.HasIndex("RegionId")
+                        .HasDatabaseName("ix_building_region_id");
+
+                    b.ToTable("building", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_building_footprint_valid", "ST_IsValid(footprint::geometry)");
+                        });
+                });
+
             modelBuilder.Entity("Unwalked.Domain.Places.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -195,6 +247,11 @@ namespace Unwalked.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("name");
 
+                    b.Property<string>("OpeningHours")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("opening_hours");
+
                     b.Property<int>("PrimaryCategoryId")
                         .HasColumnType("integer")
                         .HasColumnName("primary_category_id");
@@ -229,6 +286,8 @@ namespace Unwalked.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_place_confidence_range", "confidence BETWEEN 0 AND 1");
 
                             t.HasCheckConstraint("ck_place_name_not_blank", "btrim(name) <> ''");
+
+                            t.HasCheckConstraint("ck_place_opening_hours_not_blank", "opening_hours IS NULL OR btrim(opening_hours) <> ''");
                         });
                 });
 
@@ -463,6 +522,18 @@ namespace Unwalked.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_recommendation_feedback_category");
+                });
+
+            modelBuilder.Entity("Unwalked.Domain.Places.Building", b =>
+                {
+                    b.HasOne("Unwalked.Domain.Regions.Region", "Region")
+                        .WithMany()
+                        .HasForeignKey("RegionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_building_region");
+
+                    b.Navigation("Region");
                 });
 
             modelBuilder.Entity("Unwalked.Domain.Places.Place", b =>
