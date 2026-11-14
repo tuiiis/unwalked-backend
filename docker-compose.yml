@@ -1,0 +1,86 @@
+name: unwalked
+
+services:
+  db:
+    image: ${POSTGIS_IMAGE:-imresamu/postgis:17-3.5}
+    environment:
+      POSTGRES_DB: unwalked
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      MIGRATOR_PASSWORD: ${MIGRATOR_PASSWORD:?set MIGRATOR_PASSWORD in .env}
+      API_PASSWORD: ${API_PASSWORD:?set API_PASSWORD in .env}
+      ANALYST_PASSWORD: ${ANALYST_PASSWORD:?set ANALYST_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT:-55432}:5432"
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d unwalked"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    build:
+      context: .
+      target: tools
+    image: unwalked-tools:local
+    command: ["migrate"]
+    environment:
+      ConnectionStrings__Unwalked: Host=db;Database=unwalked;Username=unwalked_migrator;Password=${MIGRATOR_PASSWORD};Gss Encryption Mode=Disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  seed:
+    image: unwalked-tools:local
+    command: ["seed", "/seed/reference"]
+    environment:
+      ConnectionStrings__Unwalked: Host=db;Database=unwalked;Username=unwalked_migrator;Password=${MIGRATOR_PASSWORD};Gss Encryption Mode=Disable
+    volumes:
+      - ./db/seed:/seed:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  seed-test:
+    image: unwalked-tools:local
+    profiles: ["test-data"]
+    command: ["seed", "/seed/test"]
+    environment:
+      ConnectionStrings__Unwalked: Host=db;Database=unwalked;Username=unwalked_migrator;Password=${MIGRATOR_PASSWORD};Gss Encryption Mode=Disable
+    volumes:
+      - ./db/seed:/seed:ro
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  load:
+    image: unwalked-tools:local
+    profiles: ["load"]
+    command: ["load-places", "vilnius", "/data/vilnius_places.csv"]
+    environment:
+      ConnectionStrings__Unwalked: Host=db;Database=unwalked;Username=unwalked_migrator;Password=${MIGRATOR_PASSWORD};Gss Encryption Mode=Disable
+    volumes:
+      - ${PLACES_DATA_DIR:-../data/out}:/data:ro
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  api:
+    build:
+      context: .
+      target: api
+    image: unwalked-api:local
+    environment:
+      ConnectionStrings__Unwalked: Host=db;Database=unwalked;Username=unwalked_api;Password=${API_PASSWORD};Maximum Pool Size=50;Gss Encryption Mode=Disable
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY in .env}
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-18080}:8080"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+volumes:
+  db-data:
