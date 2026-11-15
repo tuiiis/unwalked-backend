@@ -6,6 +6,52 @@ The server schema is created by EF Core migrations in `src/Unwalked.Infrastructu
 
 ## Logical schema
 
+The schema has four blocks. The catalogue and the packs are public reference data loaded by scripts. Accounts hold the only personal data on the server. Reactions are anonymous and flow from raw rows into daily totals.
+
+```mermaid
+flowchart LR
+    subgraph catalogue["Catalogue"]
+        region
+        category
+        place
+        building
+        place_alternate_category
+    end
+    subgraph packs["Region packs"]
+        region_pack
+    end
+    subgraph accounts["Accounts, personal data"]
+        user_account
+        achievement_share
+    end
+    subgraph reactions["Reactions, anonymous"]
+        recommendation_feedback
+        feedback_daily_total
+    end
+
+    region --> place
+    region --> building
+    region --> region_pack
+    category --> place
+    place --> place_alternate_category
+    category --> place_alternate_category
+    category -.-> recommendation_feedback
+    category -.-> feedback_daily_total
+    recommendation_feedback == "aggregate_feedback" ==> feedback_daily_total
+    user_account --> achievement_share
+
+    classDef cat fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef pack fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef acc fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    classDef rea fill:#fef3c7,stroke:#d97706,color:#78350f
+    class region,category,place,building,place_alternate_category cat
+    class region_pack pack
+    class user_account,achievement_share acc
+    class recommendation_feedback,feedback_daily_total rea
+```
+
+Dashed lines are optional links. The thick line is the aggregation procedure. Columns, keys and cardinalities are in the diagram below.
+
 ```mermaid
 erDiagram
     region ||--o{ place : contains
