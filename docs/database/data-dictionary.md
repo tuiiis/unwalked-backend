@@ -215,7 +215,7 @@ A built offline package of tiles and places for one region. The phone downloads 
 | built_at | timestamptz | no | Build time |
 | size_bytes | bigint | no | Download size, positive |
 | sha256 | char(64) | no | Lowercase hex checksum the phone verifies after download |
-| object_key | varchar(200) | no | Key of the file in object storage. Unique |
+| object_key | varchar(200) | no | Path of the pack file published as a GitHub release asset, such as `packs/vilnius/v2.pack`. The download URL is built from it. Unique |
 | is_current | boolean | no | The pack offered to phones. At most one per region |
 
 ### category
