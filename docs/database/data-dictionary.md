@@ -190,6 +190,20 @@ Transactions follow the unit of work.
 
 Rows that break an expectation are rejected, not repaired. The catalogue loader skips such rows and reports how many it skipped.
 
+## Data layers
+
+Data moves through three layers. Each layer has its own tables and its own readers.
+
+| Layer | Server | Phone (Room) |
+|---|---|---|
+| Raw | `recommendation_feedback`, one row per reaction as the phone sent it | `point`, one row per location fix |
+| Processed | `feedback_daily_total`, counts per day, type, action and category | `stay` and `cell`, stays detected from points and visit counts per H3 cell |
+| Reporting | `v_feedback_summary`, raw and aggregated counts together for the analyst | Statistics and heat map screens read `cell` |
+
+On the server the move from raw to processed is the `aggregate_feedback` procedure. It takes reactions received before a cutoff date, adds them to the daily totals and deletes the raw rows in one statement. Raw rows therefore live only for the retention window, and the analyst never has to know where a count came from because the view unites both tables.
+
+The catalogue has no raw layer on the server. The Overture export is a CSV file outside the database, and the catalogue loader validates it on the way in. Rows that break the data quality expectations are skipped, so `place`, `building` and `category` hold only clean data. Region packs are built from these tables and published as files, which makes them the reporting layer for the phone.
+
 ## Server tables
 
 ### region
