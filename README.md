@@ -15,6 +15,34 @@ ASP.NET Core 10 with PostgreSQL 17 and PostGIS 3.5. Hosting: a Docker web servic
 | `db/seed/reference` | Reference data for every environment |
 | `db/seed/test` | Test data for local development |
 
+## Running the database only
+
+Requires Docker. Copy the environment file and set your own passwords.
+
+```bash
+cp .env.example .env
+```
+
+Start PostgreSQL, apply the migrations and load reference data. The API is not started.
+
+```bash
+docker compose run --rm --build seed
+```
+
+Add test data.
+
+```bash
+docker compose --profile test-data run --rm seed-test
+```
+
+Connect as any of the [database logins](#database-logins) with its password from `.env`.
+
+```bash
+docker compose exec db psql -h localhost -U unwalked_analyst -d unwalked
+```
+
+The place catalogue is exported and loaded as described below. Remove the database with `docker compose down -v`.
+
 ## Running locally
 
 Requires Docker. Copy the environment file and set your own passwords and a signing key of at least 32 characters.
