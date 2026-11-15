@@ -321,7 +321,7 @@ The combination of day, type, action and category is unique, with `NULLS NOT DIS
 
 | Index | Purpose |
 |---|---|
-| `ix_place_location` (GiST) | Radius search for places near a point |
+| `ix_place_location` (GiST) | Radius and box search for places. Used by the pack builder and service queries, the app searches its own copy of the pack |
 | `ix_place_h3_r11` | Places inside the H3 cells of a route or an unvisited area |
 | `ix_building_footprint` (GiST) | Building that contains or is nearest to a point |
 | `ix_building_h3_r11` | Footprints of one H3 bucket when a region pack is built |
