@@ -40,7 +40,7 @@ fi
 
 docker build --target tools -t "$image" .
 
-export ConnectionStrings__Unwalked="Host=$host;Database=$database;Username=unwalked_migrator;Password=$MIGRATOR_PASSWORD;SSL Mode=$ssl;Gss Encryption Mode=Disable"
+export ConnectionStrings__Unwalked="Host=$host;Database=$database;Username=unwalked_migrator;Password=$MIGRATOR_PASSWORD;SSL Mode=$ssl;Gss Encryption Mode=Disable;Command Timeout=600"
 tools() {
   docker run --rm -e ConnectionStrings__Unwalked -v "$PWD/db/seed:/seed:ro" -v "$(cd "$places" && pwd):/data:ro" "$image" "$@"
 }
@@ -58,4 +58,4 @@ echo "API_CONNECTION_STRING='$api'" >> "$secrets.tmp"
 mv "$secrets.tmp" "$secrets"
 chmod 600 "$secrets"
 
-echo "Done. The API connection string for Render is in $secrets under API_CONNECTION_STRING."
+echo "Done. The connection string for the API is in $secrets under API_CONNECTION_STRING."
