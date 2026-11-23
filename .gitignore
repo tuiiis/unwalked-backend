@@ -9,3 +9,4 @@ appsettings.Development.json
 TestResults/
 coverage/
 .DS_Store
+.env.neon
