@@ -5,6 +5,9 @@ using Unwalked.Domain.Places;
 
 namespace Unwalked.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Maps daily feedback totals to the feedback_daily_total table.
+/// </summary>
 public sealed class FeedbackDailyTotalConfiguration : IEntityTypeConfiguration<FeedbackDailyTotal>
 {
     public void Configure(EntityTypeBuilder<FeedbackDailyTotal> builder)

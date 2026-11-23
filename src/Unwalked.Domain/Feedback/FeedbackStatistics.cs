@@ -1,7 +1,13 @@
 namespace Unwalked.Domain.Feedback;
 
+/// <summary>
+/// Number of feedback events of one type and action.
+/// </summary>
 public sealed record FeedbackCount(RecommendationType RecommendationType, FeedbackAction Action, long Count);
 
+/// <summary>
+/// Counts and rates for one recommendation type. A rate is null when its denominator is zero.
+/// </summary>
 public sealed record RecommendationTypeStats(
     RecommendationType RecommendationType,
     long Accepted,
@@ -10,8 +16,14 @@ public sealed record RecommendationTypeStats(
     double? AcceptanceRate,
     double? VisitRate);
 
+/// <summary>
+/// Turns raw feedback counts into the rates used in the study.
+/// </summary>
 public static class FeedbackStatistics
 {
+    /// <summary>
+    /// Returns one entry per recommendation type, including types without feedback. Acceptance rate is accepted over accepted plus dismissed, visit rate is visited over accepted, both rounded to four places.
+    /// </summary>
     public static IReadOnlyList<RecommendationTypeStats> Summarize(IEnumerable<FeedbackCount> counts)
     {
         var byType = counts

@@ -4,6 +4,9 @@ using Unwalked.Domain.Places;
 
 namespace Unwalked.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Maps alternate categories of places to the place_alternate_category table.
+/// </summary>
 public sealed class PlaceAlternateCategoryConfiguration : IEntityTypeConfiguration<PlaceAlternateCategory>
 {
     public void Configure(EntityTypeBuilder<PlaceAlternateCategory> builder)

@@ -3,6 +3,9 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Unwalked.Api.OpenApi;
 
+/// <summary>
+/// Adds the recorded request and response examples to every operation of the OpenAPI document.
+/// </summary>
 internal sealed class ExamplesFilter : IOperationFilter
 {
     private const string Json = "application/json";

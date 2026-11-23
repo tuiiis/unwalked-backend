@@ -6,6 +6,9 @@ using Unwalked.Application.Places;
 
 namespace Unwalked.Api.Controllers;
 
+/// <summary>
+/// Read-only search in the place catalogue by radius, bounding box or H3 cells.
+/// </summary>
 [ApiController]
 [Route("api/v1/places")]
 [Produces("application/json")]

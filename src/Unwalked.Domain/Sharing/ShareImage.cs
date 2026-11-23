@@ -2,8 +2,14 @@ using Unwalked.Domain.Common;
 
 namespace Unwalked.Domain.Sharing;
 
+/// <summary>
+/// A validated achievement image. The bytes must match the declared PNG, JPEG or WebP type.
+/// </summary>
 public sealed record ShareImage
 {
+    /// <summary>
+    /// Largest accepted image size, 300 KB.
+    /// </summary>
     public const int MaxBytes = 300 * 1024;
     public const string Png = "image/png";
     public const string Jpeg = "image/jpeg";
@@ -24,6 +30,9 @@ public sealed record ShareImage
 
     public byte[] Content { get; }
 
+    /// <summary>
+    /// Decodes Base64 image data and validates it.
+    /// </summary>
     public static ShareImage FromBase64(string contentType, string base64)
     {
         byte[] content;
@@ -39,6 +48,9 @@ public sealed record ShareImage
         return Create(contentType, content);
     }
 
+    /// <summary>
+    /// Validates the size and the file signature against the content type.
+    /// </summary>
     public static ShareImage Create(string contentType, byte[] content)
     {
         var normalizedType = contentType.Trim().ToLowerInvariant();

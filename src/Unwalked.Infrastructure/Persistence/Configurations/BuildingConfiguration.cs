@@ -4,6 +4,9 @@ using Unwalked.Domain.Places;
 
 namespace Unwalked.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Maps building footprints to the building table with a spatial index.
+/// </summary>
 public sealed class BuildingConfiguration : IEntityTypeConfiguration<Building>
 {
     public void Configure(EntityTypeBuilder<Building> builder)

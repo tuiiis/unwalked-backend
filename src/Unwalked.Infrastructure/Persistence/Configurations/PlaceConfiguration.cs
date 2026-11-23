@@ -4,6 +4,9 @@ using Unwalked.Domain.Places;
 
 namespace Unwalked.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Maps places to the place table with spatial, H3 and category indexes.
+/// </summary>
 public sealed class PlaceConfiguration : IEntityTypeConfiguration<Place>
 {
     public void Configure(EntityTypeBuilder<Place> builder)

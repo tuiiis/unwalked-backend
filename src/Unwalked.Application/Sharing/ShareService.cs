@@ -5,10 +5,16 @@ using Unwalked.Domain.Sharing;
 
 namespace Unwalked.Application.Sharing;
 
+/// <summary>
+/// Use cases for publishing, reading and removing shared achievements.
+/// </summary>
 public sealed class ShareService(IShareRepository shares, IClock clock)
 {
     private const string ShareResource = "Share";
 
+    /// <summary>
+    /// Validates the name, date and image and stores a new share for the owner.
+    /// </summary>
     public async Task<ShareDetails> CreateAsync(Guid ownerId, CreateShareCommand command, CancellationToken cancellationToken)
     {
         var name = command.AchievementName.Trim();
@@ -39,15 +45,24 @@ public sealed class ShareService(IShareRepository shares, IClock clock)
         return ToDetails(share);
     }
 
+    /// <summary>
+    /// Returns the public data of a share. Throws NotFoundException when it does not exist.
+    /// </summary>
     public async Task<ShareDetails> GetAsync(Guid id, CancellationToken cancellationToken) =>
         ToDetails(await FindExistingAsync(id, cancellationToken));
 
+    /// <summary>
+    /// Returns the stored image of a share.
+    /// </summary>
     public async Task<ShareImage> GetImageAsync(Guid id, CancellationToken cancellationToken)
     {
         var share = await FindExistingAsync(id, cancellationToken);
         return ShareImage.Create(share.ImageContentType, share.Image);
     }
 
+    /// <summary>
+    /// Deletes a share owned by the caller. Someone else's share is reported as not found.
+    /// </summary>
     public async Task DeleteAsync(Guid ownerId, Guid id, CancellationToken cancellationToken)
     {
         if (!await shares.DeleteOwnedAsync(id, ownerId, cancellationToken))

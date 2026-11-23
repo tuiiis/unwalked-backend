@@ -4,6 +4,9 @@ using Unwalked.Domain.Users;
 
 namespace Unwalked.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Maps accounts to the user_account table with a unique email.
+/// </summary>
 public sealed class UserAccountConfiguration : IEntityTypeConfiguration<UserAccount>
 {
     public void Configure(EntityTypeBuilder<UserAccount> builder)

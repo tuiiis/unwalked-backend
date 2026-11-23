@@ -5,6 +5,9 @@ using Unwalked.Application.Feedback;
 
 namespace Unwalked.Api.Controllers;
 
+/// <summary>
+/// Anonymous feedback on recommendations and the aggregated statistics used in the study.
+/// </summary>
 [ApiController]
 [Route("api/v1/feedback")]
 [Produces("application/json")]

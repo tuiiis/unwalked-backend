@@ -4,11 +4,20 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Unwalked.Api.OpenApi;
 
+/// <summary>
+/// Configures the OpenAPI document: metadata, the bearer scheme, examples and naming rules.
+/// </summary>
 public static class SwaggerSetup
 {
+    /// <summary>
+    /// Name of the OpenAPI document, also used in its URL.
+    /// </summary>
     public const string DocumentName = "v1";
     private const string BearerSchemeId = "bearer";
 
+    /// <summary>
+    /// Registers the OpenAPI generator with all filters used by the API.
+    /// </summary>
     public static IServiceCollection AddUnwalkedSwagger(this IServiceCollection services) =>
         services.AddSwaggerGen(options =>
         {

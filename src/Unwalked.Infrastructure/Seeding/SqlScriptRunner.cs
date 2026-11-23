@@ -2,8 +2,14 @@ using Npgsql;
 
 namespace Unwalked.Infrastructure.Seeding;
 
+/// <summary>
+/// Runs seed scripts against the database.
+/// </summary>
 public sealed class SqlScriptRunner(NpgsqlDataSource dataSource)
 {
+    /// <summary>
+    /// Runs every .sql file in the directory in name order inside one transaction and returns the file names.
+    /// </summary>
     public async Task<IReadOnlyList<string>> RunDirectoryAsync(string directory, CancellationToken cancellationToken)
     {
         var scripts = Directory.GetFiles(directory, "*.sql").Order(StringComparer.Ordinal).ToList();

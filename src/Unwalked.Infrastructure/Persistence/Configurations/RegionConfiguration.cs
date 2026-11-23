@@ -4,6 +4,9 @@ using Unwalked.Domain.Regions;
 
 namespace Unwalked.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Maps regions to the region table.
+/// </summary>
 public sealed class RegionConfiguration : IEntityTypeConfiguration<Region>
 {
     public void Configure(EntityTypeBuilder<Region> builder)

@@ -5,9 +5,15 @@ using Unwalked.Domain.Common;
 
 namespace Unwalked.Api.ErrorHandling;
 
+/// <summary>
+/// Turns exceptions from the application and domain layers into Problem Details responses with the matching status code. Unexpected errors are logged and answer 500 without internal details.
+/// </summary>
 public sealed class ApplicationExceptionHandler(IProblemDetailsService problemDetails, ILogger<ApplicationExceptionHandler> logger)
     : IExceptionHandler
 {
+    /// <summary>
+    /// Writes the Problem Details response for the exception and reports that it was handled.
+    /// </summary>
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         var problem = exception switch

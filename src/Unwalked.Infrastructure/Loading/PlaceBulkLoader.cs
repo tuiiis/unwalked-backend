@@ -6,10 +6,19 @@ using Unwalked.Domain.Geo;
 
 namespace Unwalked.Infrastructure.Loading;
 
+/// <summary>
+/// Summary of one catalogue load.
+/// </summary>
 public sealed record PlaceLoadReport(int Places, int AlternateLinks, int Categories, int SkippedRows, TimeSpan Elapsed);
 
+/// <summary>
+/// Replaces the place catalogue of a region with binary COPY in one transaction.
+/// </summary>
 public sealed class PlaceBulkLoader(NpgsqlDataSource dataSource, GeometryFactory geometryFactory)
 {
+    /// <summary>
+    /// Deletes the region's places, inserts the parsed rows with their categories and returns what was loaded. Nothing changes when any step fails.
+    /// </summary>
     public async Task<PlaceLoadReport> LoadAsync(string regionCode, TextReader csv, CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();

@@ -8,6 +8,9 @@ using Unwalked.Application.Sharing;
 
 namespace Unwalked.Api.Controllers;
 
+/// <summary>
+/// Public links for shared achievements. Creating and deleting need a bearer token, reading is anonymous.
+/// </summary>
 [ApiController]
 [Route("api/v1/shares")]
 public sealed class SharesController(ShareService shares) : ControllerBase

@@ -1,5 +1,8 @@
 namespace Unwalked.Domain.Feedback;
 
+/// <summary>
+/// Feedback events per day, type, action and category, kept so statistics outlive the raw events.
+/// </summary>
 public sealed class FeedbackDailyTotal
 {
     public long Id { get; set; }
@@ -12,5 +15,8 @@ public sealed class FeedbackDailyTotal
 
     public int? CategoryId { get; set; }
 
+    /// <summary>
+    /// Number of events in this group.
+    /// </summary>
     public int EventCount { get; set; }
 }

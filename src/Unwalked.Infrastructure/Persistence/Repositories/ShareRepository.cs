@@ -4,6 +4,9 @@ using Unwalked.Domain.Sharing;
 
 namespace Unwalked.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of share storage.
+/// </summary>
 public sealed class ShareRepository(UnwalkedDbContext db) : IShareRepository
 {
     public async Task AddAsync(AchievementShare share, CancellationToken cancellationToken)

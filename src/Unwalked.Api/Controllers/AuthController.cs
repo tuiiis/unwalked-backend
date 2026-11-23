@@ -5,6 +5,9 @@ using Unwalked.Application.Auth;
 
 namespace Unwalked.Api.Controllers;
 
+/// <summary>
+/// Registration and sign-in. Accounts exist only to publish achievements, location history never reaches the server.
+/// </summary>
 [ApiController]
 [Route("api/v1/auth")]
 [Consumes("application/json")]

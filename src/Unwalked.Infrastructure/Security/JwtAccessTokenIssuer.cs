@@ -9,6 +9,9 @@ using Unwalked.Domain.Users;
 
 namespace Unwalked.Infrastructure.Security;
 
+/// <summary>
+/// Issues HMAC-SHA256 signed JWT access tokens with the user id as subject.
+/// </summary>
 public sealed class JwtAccessTokenIssuer(IOptions<JwtOptions> options, IClock clock) : IAccessTokenIssuer
 {
     private readonly JsonWebTokenHandler handler = new();
@@ -33,6 +36,9 @@ public sealed class JwtAccessTokenIssuer(IOptions<JwtOptions> options, IClock cl
         return new AccessToken(token, expiresAt);
     }
 
+    /// <summary>
+    /// Builds the signing key from the configured secret. Shared with token validation.
+    /// </summary>
     public static SymmetricSecurityKey CreateSigningKey(JwtOptions settings) =>
         new(Encoding.UTF8.GetBytes(settings.SigningKey));
 }

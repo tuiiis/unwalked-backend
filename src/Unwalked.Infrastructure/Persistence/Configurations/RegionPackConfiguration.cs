@@ -4,6 +4,9 @@ using Unwalked.Domain.Regions;
 
 namespace Unwalked.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Maps offline region packs to the region_pack table.
+/// </summary>
 public sealed class RegionPackConfiguration : IEntityTypeConfiguration<RegionPack>
 {
     public void Configure(EntityTypeBuilder<RegionPack> builder)

@@ -3,10 +3,16 @@ using Unwalked.Domain.Common;
 
 namespace Unwalked.Domain.Places;
 
+/// <summary>
+/// Validation of category codes sent by clients.
+/// </summary>
 public static partial class CategoryCode
 {
     public const int MaxLength = 64;
 
+    /// <summary>
+    /// Trims and lower-cases the code and checks it uses only a-z, 0-9 and underscore.
+    /// </summary>
     public static string Normalize(string code)
     {
         var normalized = code.Trim().ToLowerInvariant();
@@ -18,6 +24,9 @@ public static partial class CategoryCode
         return normalized;
     }
 
+    /// <summary>
+    /// Like Normalize, but returns null for an empty value.
+    /// </summary>
     public static string? NormalizeOptional(string? code) =>
         string.IsNullOrWhiteSpace(code) ? null : Normalize(code);
 

@@ -5,6 +5,9 @@ using Unwalked.Domain.Users;
 
 namespace Unwalked.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Maps shared achievements to the achievement_share table.
+/// </summary>
 public sealed class AchievementShareConfiguration : IEntityTypeConfiguration<AchievementShare>
 {
     public void Configure(EntityTypeBuilder<AchievementShare> builder)

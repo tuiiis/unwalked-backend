@@ -2,6 +2,9 @@ using Unwalked.Domain.Common;
 
 namespace Unwalked.Domain.Geo;
 
+/// <summary>
+/// A WGS84 point with validated latitude and longitude in degrees.
+/// </summary>
 public readonly record struct GeoCoordinate
 {
     private GeoCoordinate(double latitude, double longitude)
@@ -14,6 +17,9 @@ public readonly record struct GeoCoordinate
 
     public double Longitude { get; }
 
+    /// <summary>
+    /// Creates a point. Throws DomainValidationException when a value is out of range or not a number.
+    /// </summary>
     public static GeoCoordinate Create(double latitude, double longitude)
     {
         if (double.IsNaN(latitude) || latitude is < -90 or > 90)

@@ -7,6 +7,9 @@ using Unwalked.Domain.Users;
 
 namespace Unwalked.Infrastructure.Persistence;
 
+/// <summary>
+/// EF Core context for the Unwalked database. Mapping lives in the Configurations folder.
+/// </summary>
 public sealed class UnwalkedDbContext(DbContextOptions<UnwalkedDbContext> options) : DbContext(options)
 {
     public DbSet<Place> Places => Set<Place>();

@@ -8,6 +8,9 @@ using Unwalked.Domain.Places;
 
 namespace Unwalked.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// Catalogue queries with PostGIS. Radius searches use geography distance, so results are in metres.
+/// </summary>
 public sealed class PlaceReadRepository(UnwalkedDbContext db, GeometryFactory geometryFactory) : IPlaceReadRepository
 {
     public async Task<IReadOnlyList<PlaceSummary>> FindNearAsync(GeoCoordinate center, double radiusMeters, string? category, int limit, CancellationToken cancellationToken)

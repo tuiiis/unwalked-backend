@@ -5,15 +5,27 @@ using Unwalked.Domain.Places;
 
 namespace Unwalked.Infrastructure.Loading;
 
+/// <summary>
+/// Parses the Overture places export into import records and skips rows that break domain rules.
+/// </summary>
 public sealed class PlaceCsvParser
 {
+    /// <summary>
+    /// Columns the export must contain, in any order.
+    /// </summary>
     public static readonly string[] RequiredColumns = ["id", "name", "category", "alternate_categories", "confidence", "lon", "lat"];
 
     private static readonly char[] ListSeparators = [',', '|', ';'];
     private static readonly char[] ListDecorations = ['[', ']', '"', '\'', ' '];
 
+    /// <summary>
+    /// Number of rows skipped so far because they were invalid or repeated an id.
+    /// </summary>
     public int SkippedRows { get; private set; }
 
+    /// <summary>
+    /// Reads the header, then yields one record per valid row.
+    /// </summary>
     public IEnumerable<PlaceImportRecord> Parse(TextReader reader)
     {
         using var rows = CsvRecordReader.Read(reader).GetEnumerator();
@@ -38,6 +50,9 @@ public sealed class PlaceCsvParser
         }
     }
 
+    /// <summary>
+    /// Splits an alternate category list written as JSON, comma, pipe or semicolon separated text.
+    /// </summary>
     public static IReadOnlyList<string> ParseCategoryList(string raw) =>
         raw.Split(ListSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(item => item.Trim(ListDecorations))

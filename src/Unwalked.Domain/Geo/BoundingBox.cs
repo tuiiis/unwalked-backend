@@ -2,8 +2,14 @@ using Unwalked.Domain.Common;
 
 namespace Unwalked.Domain.Geo;
 
+/// <summary>
+/// A latitude and longitude rectangle used for map area searches.
+/// </summary>
 public sealed record BoundingBox
 {
+    /// <summary>
+    /// Largest allowed area, which keeps a single query to about a city.
+    /// </summary>
     public const double MaxAreaSquareDegrees = 0.25;
 
     private BoundingBox(GeoCoordinate southWest, GeoCoordinate northEast)
@@ -16,6 +22,9 @@ public sealed record BoundingBox
 
     public GeoCoordinate NorthEast { get; }
 
+    /// <summary>
+    /// Validates the corners and the area and creates the box.
+    /// </summary>
     public static BoundingBox Create(double minLatitude, double minLongitude, double maxLatitude, double maxLongitude)
     {
         var southWest = GeoCoordinate.Create(minLatitude, minLongitude);

@@ -2,11 +2,17 @@ using System.Text;
 
 namespace Unwalked.Infrastructure.Loading;
 
+/// <summary>
+/// Minimal RFC 4180 reader for the catalogue export, with quoted fields and doubled quotes.
+/// </summary>
 public static class CsvRecordReader
 {
     private const char Separator = ',';
     private const char Quote = '"';
 
+    /// <summary>
+    /// Yields the fields of each record, header included.
+    /// </summary>
     public static IEnumerable<IReadOnlyList<string>> Read(TextReader reader)
     {
         var fields = new List<string>();

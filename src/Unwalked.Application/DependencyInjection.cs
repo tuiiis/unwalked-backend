@@ -6,8 +6,14 @@ using Unwalked.Application.Sharing;
 
 namespace Unwalked.Application;
 
+/// <summary>
+/// Registers the application layer services.
+/// </summary>
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Adds the use case services to the container.
+    /// </summary>
     public static IServiceCollection AddApplication(this IServiceCollection services) =>
         services
             .AddScoped<PlaceQueryService>()

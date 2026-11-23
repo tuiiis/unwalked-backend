@@ -1,5 +1,8 @@
 namespace Unwalked.Domain.Places;
 
+/// <summary>
+/// Link between a place and one of its alternate categories.
+/// </summary>
 public sealed class PlaceAlternateCategory
 {
     public long PlaceId { get; set; }

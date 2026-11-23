@@ -5,6 +5,9 @@ using Unwalked.Domain.Places;
 
 namespace Unwalked.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Maps raw feedback events to the recommendation_feedback table.
+/// </summary>
 public sealed class RecommendationFeedbackConfiguration : IEntityTypeConfiguration<RecommendationFeedback>
 {
     public void Configure(EntityTypeBuilder<RecommendationFeedback> builder)

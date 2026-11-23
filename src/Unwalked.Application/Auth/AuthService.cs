@@ -4,12 +4,18 @@ using Unwalked.Domain.Users;
 
 namespace Unwalked.Application.Auth;
 
+/// <summary>
+/// Registration and sign-in use cases.
+/// </summary>
 public sealed class AuthService(
     IUserRepository users,
     IPasswordHasher passwordHasher,
     IAccessTokenIssuer tokenIssuer,
     IClock clock)
 {
+    /// <summary>
+    /// Validates the email and password, stores a new account and returns its id. Throws ConflictException when the email is taken.
+    /// </summary>
     public async Task<Guid> RegisterAsync(string email, string password, CancellationToken cancellationToken)
     {
         var normalizedEmail = EmailAddress.Normalize(email);
@@ -31,6 +37,9 @@ public sealed class AuthService(
         return user.Id;
     }
 
+    /// <summary>
+    /// Checks the credentials and issues an access token. A wrong email and a wrong password fail the same way.
+    /// </summary>
     public async Task<AccessToken> LoginAsync(string email, string password, CancellationToken cancellationToken)
     {
         var user = await users.FindByEmailAsync(email.Trim().ToLowerInvariant(), cancellationToken);

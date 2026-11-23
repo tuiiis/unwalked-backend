@@ -11,10 +11,19 @@ using Unwalked.Infrastructure.Time;
 
 namespace Unwalked.Infrastructure;
 
+/// <summary>
+/// Registers the infrastructure layer: database, repositories, security and time.
+/// </summary>
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Spatial reference id of WGS84, used for every geometry column.
+    /// </summary>
     public const int Wgs84Srid = 4326;
 
+    /// <summary>
+    /// Adds the data source, the DbContext, repositories, the password hasher and the JWT issuer. Fails at startup when the connection string or JWT settings are missing.
+    /// </summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString(UnwalkedDbContextOptions.ConnectionStringName)

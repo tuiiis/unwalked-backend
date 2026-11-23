@@ -3,10 +3,16 @@ using Unwalked.Domain.Common;
 
 namespace Unwalked.Domain.Users;
 
+/// <summary>
+/// Validation of account email addresses.
+/// </summary>
 public static class EmailAddress
 {
     public const int MaxLength = 254;
 
+    /// <summary>
+    /// Checks the address and returns it trimmed and lower-cased.
+    /// </summary>
     public static string Normalize(string email)
     {
         var trimmed = email.Trim();

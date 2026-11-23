@@ -4,6 +4,9 @@ using Unwalked.Domain.Feedback;
 
 namespace Unwalked.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of feedback storage. A repeated event id is caught by the unique index.
+/// </summary>
 public sealed class FeedbackRepository(UnwalkedDbContext db) : IFeedbackRepository
 {
     public async Task<bool> AddIfNewAsync(RecommendationFeedback feedback, CancellationToken cancellationToken)

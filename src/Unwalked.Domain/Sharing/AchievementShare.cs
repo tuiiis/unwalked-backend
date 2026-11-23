@@ -1,5 +1,8 @@
 namespace Unwalked.Domain.Sharing;
 
+/// <summary>
+/// An achievement a user published by link, with an image that has the home area already blurred.
+/// </summary>
 public sealed class AchievementShare
 {
     public const int MaxNameLength = 80;

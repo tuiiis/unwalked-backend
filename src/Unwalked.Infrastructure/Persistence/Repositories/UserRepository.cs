@@ -4,6 +4,9 @@ using Unwalked.Domain.Users;
 
 namespace Unwalked.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// EF Core implementation of account storage. A taken email is caught by the unique index.
+/// </summary>
 public sealed class UserRepository(UnwalkedDbContext db) : IUserRepository
 {
     public Task<UserAccount?> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken) =>

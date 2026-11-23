@@ -3,8 +3,14 @@ using Unwalked.Domain.Common;
 
 namespace Unwalked.Domain.Feedback;
 
+/// <summary>
+/// Converts enum values to and from the snake_case names used in the API.
+/// </summary>
 public static class WireName
 {
+    /// <summary>
+    /// Returns the snake_case name of the value, for example NearbyNewPlace becomes nearby_new_place.
+    /// </summary>
     public static string From<TEnum>(TEnum value)
         where TEnum : struct, Enum
     {
@@ -23,6 +29,9 @@ public static class WireName
         return builder.ToString();
     }
 
+    /// <summary>
+    /// Parses a snake_case name, ignoring case and surrounding spaces. Throws DomainValidationException listing the allowed names.
+    /// </summary>
     public static TEnum Parse<TEnum>(string field, string text)
         where TEnum : struct, Enum
     {

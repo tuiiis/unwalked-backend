@@ -3,6 +3,9 @@ using Unwalked.Domain.Users;
 
 namespace Unwalked.Infrastructure.Security;
 
+/// <summary>
+/// Password hashing with the ASP.NET Core Identity hasher, PBKDF2 with HMAC-SHA512 and a random salt.
+/// </summary>
 public sealed class AspNetPasswordHasher : Application.Abstractions.IPasswordHasher
 {
     private static readonly UserAccount HashSubject = new() { Email = string.Empty, PasswordHash = string.Empty };

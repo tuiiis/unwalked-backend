@@ -5,11 +5,23 @@ using Unwalked.Domain.Places;
 
 namespace Unwalked.Application.Places;
 
+/// <summary>
+/// Place search use cases. Validates the input and passes normalised queries to the repository.
+/// </summary>
 public sealed class PlaceQueryService(IPlaceReadRepository places)
 {
+    /// <summary>
+    /// Most H3 cells a client may send in one request.
+    /// </summary>
     public const int MaxRequestedCells = 500;
+    /// <summary>
+    /// Most resolution 11 cells one request may cover after expansion.
+    /// </summary>
     public const int MaxExpandedCells = 20_000;
 
+    /// <summary>
+    /// Places within a radius of a point.
+    /// </summary>
     public Task<IReadOnlyList<PlaceSummary>> FindNearAsync(
         double latitude,
         double longitude,
@@ -23,6 +35,9 @@ public sealed class PlaceQueryService(IPlaceReadRepository places)
         return places.FindNearAsync(center, radius, CategoryCode.NormalizeOptional(category), ResultLimit.Resolve(limit), cancellationToken);
     }
 
+    /// <summary>
+    /// Places inside a bounding box.
+    /// </summary>
     public Task<IReadOnlyList<PlaceSummary>> FindInBoundingBoxAsync(
         double minLatitude,
         double minLongitude,
@@ -36,6 +51,9 @@ public sealed class PlaceQueryService(IPlaceReadRepository places)
         return places.FindInBoundingBoxAsync(box, CategoryCode.NormalizeOptional(category), ResultLimit.Resolve(limit), cancellationToken);
     }
 
+    /// <summary>
+    /// Places inside the given H3 cells of any supported resolution.
+    /// </summary>
     public Task<IReadOnlyList<PlaceSummary>> FindInCellsAsync(
         IReadOnlyCollection<string> cells,
         string? category,
@@ -46,6 +64,9 @@ public sealed class PlaceQueryService(IPlaceReadRepository places)
         return places.FindInCellsAsync(expanded, CategoryCode.NormalizeOptional(category), ResultLimit.Resolve(limit), cancellationToken);
     }
 
+    /// <summary>
+    /// Parses the cells and expands each one to its resolution 11 children, enforcing the request limits.
+    /// </summary>
     public static IReadOnlyCollection<long> ExpandCells(IReadOnlyCollection<string> cells)
     {
         if (cells.Count is 0 or > MaxRequestedCells)
