@@ -15,6 +15,11 @@ using Unwalked.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Configuration["PORT"] is { Length: > 0 } port)
+{
+    builder.WebHost.UseUrls($"http://*:{port}");
+}
+
 builder.Host.UseSerilog((context, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .Enrich.FromLogContext()
