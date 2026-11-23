@@ -2,7 +2,7 @@
 
 Back-end for the bachelor thesis "Mobile Application for Recommending New Places and Walking Routes Based on the Analysis of the User's Habitual Geography". Documentation and business analysis: [unwalked-thesis](https://github.com/tuiiis/unwalked-thesis).
 
-ASP.NET Core 10 with PostgreSQL 17 and PostGIS 3.5. Hosting: a Docker container on Heroku in the EU and managed PostgreSQL on Neon in Frankfurt. [Deployment](docs/deployment.md) explains how to set them up.
+ASP.NET Core 10 with PostgreSQL 17 and PostGIS 3.5. Hosting: a Docker web service on Render and managed PostgreSQL on Neon, both in the EU (Frankfurt). [Deployment](docs/deployment.md) explains how to set them up.
 
 ## API documentation
 
