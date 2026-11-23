@@ -104,6 +104,17 @@ dotnet run --project src/Unwalked.Tools -- load-places vilnius path/to/vilnius_p
 
 The tools read the connection string from `ConnectionStrings__Unwalked`.
 
+## Continuous integration
+
+GitHub Actions runs [ci.yml](.github/workflows/ci.yml) on every push and pull request. Render deploys a commit to production only after all four jobs pass.
+
+| Job | What it checks |
+|---|---|
+| Tests and coverage | Builds the solution, runs unit and integration tests, publishes the coverage report and fails below 80% line coverage |
+| Vulnerable packages | Fails when any NuGet package, including transitive ones, has a known vulnerability |
+| OpenAPI lint | Validates the specification with Spectral and Redocly |
+| Docker image | Builds the production image |
+
 ## Tests
 
 Unit tests use NUnit. Integration tests start PostGIS in Testcontainers, apply the migrations and the reference seed, and check the API together with database constraints, the trigger, the procedure, the views and role permissions.

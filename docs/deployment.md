@@ -7,7 +7,7 @@ The production API runs as a Docker web service on Render. The database is manag
 | API | Render web service built from the `Dockerfile` | 512 MB RAM, sleeps after 15 minutes without traffic, the first request after that takes about a minute |
 | Database | Neon PostgreSQL 17 with PostGIS | 1 GB storage, compute suspends after 5 minutes idle and wakes on the next connection |
 
-Render deploys every push to `main` automatically using [render.yaml](../render.yaml). Secrets live only in the Render and Neon dashboards and in a local `.env.neon` file that git ignores.
+Every push to `main` runs the [CI workflow](../.github/workflows/ci.yml). Render deploys the commit automatically using [render.yaml](../render.yaml), but only after all CI checks pass. Secrets live only in the Render and Neon dashboards and in a local `.env.neon` file that git ignores.
 
 ## First deployment
 
@@ -45,7 +45,7 @@ Healthy
 
 ## Later deployments
 
-Push to `main`. Render builds the image and switches traffic once `/health` answers. Schema changes run from a laptop before the push.
+Push to `main`. GitHub Actions builds and tests the commit. When every check passes, Render builds the image and switches traffic once `/health` answers. A failed check leaves the running version in place. Schema changes run from a laptop before the push.
 
 ```bash
 SKIP_ROLES=1 tools/deploy-neon.sh ep-example-123456.eu-central-1.aws.neon.tech

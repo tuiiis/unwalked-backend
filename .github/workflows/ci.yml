@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  MIN_LINE_COVERAGE: 80
+
+jobs:
+  test:
+    name: Tests and coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore
+      - run: dotnet build --no-restore --configuration Release
+      - name: Run unit and integration tests
+        run: dotnet test --no-build --configuration Release --settings coverage.runsettings --collect "XPlat Code Coverage" --results-directory TestResults --logger trx
+      - name: Build coverage report
+        run: |
+          dotnet tool restore
+          dotnet reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:TestResults/report -reporttypes:"Html;TextSummary;MarkdownSummaryGithub"
+          cat TestResults/report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Check coverage threshold
+        run: |
+          coverage=$(grep -m1 "Line coverage:" TestResults/report/Summary.txt | grep -oE "[0-9]+(\.[0-9]+)?")
+          echo "Line coverage is ${coverage}%, the minimum is ${MIN_LINE_COVERAGE}%"
+          awk -v c="$coverage" -v m="$MIN_LINE_COVERAGE" 'BEGIN { exit (c + 0 >= m + 0) ? 0 : 1 }'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults
+
+  audit:
+    name: Vulnerable packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore
+      - name: Fail on known vulnerabilities
+        run: |
+          dotnet list package --vulnerable --include-transitive | tee vulnerable.txt
+          ! grep -q "has the following vulnerable packages" vulnerable.txt
+
+  api-docs:
+    name: OpenAPI lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx --yes @stoplight/spectral-cli@6.15.0 lint docs/api/openapi.yaml --fail-severity error
+      - run: npx --yes @redocly/cli@2.11.1 lint docs/api/openapi.yaml
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --target api --tag unwalked-api:ci .
