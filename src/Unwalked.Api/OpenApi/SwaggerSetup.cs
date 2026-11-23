@@ -34,6 +34,7 @@ public static class SwaggerSetup
             options.SchemaFilter<RequiredNonNullablePropertiesFilter>();
             options.OperationFilter<SecurityRequirementFilter>();
             options.OperationFilter<ProblemResponsesFilter>();
+            options.OperationFilter<ExamplesFilter>();
             options.DocumentFilter<TagDescriptionsFilter>();
         });
 

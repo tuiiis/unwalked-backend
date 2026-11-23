@@ -69,7 +69,7 @@ app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseSerilogRequestLogging();
-app.UseSwagger(options => options.RouteTemplate = "openapi/{documentName}.json");
+app.UseSwagger(options => options.RouteTemplate = "openapi/{documentName}.{extension:regex(^(json|yaml)$)}");
 app.UseSwaggerUI(options => options.SwaggerEndpoint($"/openapi/{SwaggerSetup.DocumentName}.json", "v1"));
 app.UseAuthentication();
 app.UseAuthorization();
