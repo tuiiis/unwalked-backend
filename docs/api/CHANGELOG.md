@@ -1,0 +1,15 @@
+# Changelog
+
+All notable changes to the API are listed here. The format follows Keep a Changelog and versions follow semantic versioning.
+
+## [1.0.0] - 2026-11-22
+
+### Added
+
+- Places: `GET /places/near`, `GET /places/in-bbox`, `POST /places/by-cells` over the Overture Places catalogue for Vilnius
+- Accounts: `POST /auth/register`, `POST /auth/login` with JWT bearer tokens valid for 30 days
+- Feedback: `POST /feedback`, idempotent by `eventId`, and `GET /feedback/stats` per recommendation type
+- Shares: create, read, image and delete for public achievement links
+- Problem Details error format with `traceId` on every error
+- Request and response examples for every operation
+- OpenAPI document served as YAML and JSON under `/openapi/v1`

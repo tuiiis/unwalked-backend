@@ -4,6 +4,10 @@ Back-end for the bachelor thesis "Mobile Application for Recommending New Places
 
 ASP.NET Core 10 with PostgreSQL 17 and PostGIS 3.5. Hosting: a Docker web service on Render and managed PostgreSQL on Neon, both in the EU (Frankfurt).
 
+## API documentation
+
+Start at [docs/api](docs/api/README.md). It has a Getting started guide, two step-by-step tutorials, guides on authentication, errors, limits, idempotency and versioning, and the [OpenAPI specification](docs/api/openapi.yaml). A running instance serves Swagger UI at http://localhost:18080/swagger.
+
 ## Database
 
 | Document | Content |
@@ -109,3 +113,13 @@ Requires the .NET SDK version from `global.json` (10.0.100 or a newer feature ba
 ```bash
 dotnet test
 ```
+
+Coverage is collected with coverlet and turned into an HTML report with ReportGenerator, both pinned in the repository.
+
+```bash
+dotnet test --settings coverage.runsettings --collect "XPlat Code Coverage" --results-directory TestResults
+dotnet tool restore
+dotnet reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:TestResults/report -reporttypes:"Html;TextSummary"
+```
+
+Open `TestResults/report/index.html`. On 22.11.2026 the suite had 181 tests with 98.2% line and 93% branch coverage.

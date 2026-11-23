@@ -1,0 +1,1183 @@
+openapi: 3.0.4
+info:
+  title: Places and sharing API
+  description: 'Place catalogue queries, achievement share links and anonymous recommendation feedback for the mobile app.'
+  contact:
+    name: Tatsiana Halaburda
+    url: https://ehu.lt
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  version: 1.0.0
+servers:
+  - url: /
+    description: The host that serves this document
+paths:
+  /api/v1/auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Creates an account used only for sharing achievements.
+      description: The email is trimmed and lower-cased. The password must be 10-128 characters. Registering an existing email answers 409.
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              valid:
+                summary: New account
+                value:
+                  email: ona@example.test
+                  password: Unwalked-test-1
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+              examples:
+                created:
+                  summary: Account created
+                  value:
+                    userId: 5551756e-6bdc-4b6e-8a4a-4b0f3e6c2a11
+        '400':
+          description: The request is invalid. 'errors' maps each invalid field to its messages.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+              examples:
+                invalidEmail:
+                  summary: The email is not an address
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                    title: One or more validation errors occurred.
+                    status: 400
+                    errors:
+                      email:
+                        - Email address is not valid.
+                    traceId: 0HNQ6B3DSL1ET:00000001
+                shortPassword:
+                  summary: The password is shorter than 10 characters
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                    title: One or more validation errors occurred.
+                    status: 400
+                    errors:
+                      password:
+                        - Password must be 10-128 characters long.
+                    traceId: 0HNQ6B3DSL1EU:00000001
+        '409':
+          description: The resource already exists.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                emailTaken:
+                  summary: The email is already registered
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.10
+                    title: Conflict.
+                    status: 409
+                    detail: An account with this email already exists.
+                    traceId: 0HNQ6B3DSL1F7:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Exchanges email and password for a JWT access token.
+      description: Wrong email and wrong password answer the same 401 so accounts cannot be enumerated.
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              valid:
+                summary: Test account from the seed data
+                value:
+                  email: ona@example.test
+                  password: Unwalked-test-1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                token:
+                  summary: Token valid for 30 days
+                  value:
+                    accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTUxNzU2ZS02YmRjLTRiNmUtOGE0YS00YjBmM2U2YzJhMTEifQ.signature
+                    tokenType: Bearer
+                    expiresAt: '2026-12-21T23:10:29+00:00'
+        '400':
+          description: The request is invalid. 'errors' maps each invalid field to its messages.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+              examples:
+                missingPassword:
+                  summary: The password field is absent
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                    title: One or more validation errors occurred.
+                    status: 400
+                    errors:
+                      Password:
+                        - The Password field is required.
+                    traceId: 0HNQ6B3DSL1EV:00000001
+        '401':
+          description: 'The bearer token is missing or invalid, or the credentials are wrong.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                wrongCredentials:
+                  summary: Wrong email or wrong password
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.2
+                    title: Authentication failed.
+                    status: 401
+                    detail: Email or password is incorrect.
+                    traceId: 0HNQ6B3DSL1EQ:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
+  /api/v1/feedback:
+    post:
+      tags:
+        - Feedback
+      summary: 'Records anonymous, opt-in feedback on a recommendation.'
+      description: 'Idempotent by eventId: repeating an event returns 200 instead of 201 and stores nothing.'
+      operationId: submitFeedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitFeedbackRequest'
+            examples:
+              accepted:
+                summary: The user opened a nearby cafe
+                value:
+                  eventId: 7d1f9a52-3c1e-4b8a-9a43-2f0c6b1e5d10
+                  recommendationType: nearby_new_place
+                  action: accepted
+                  category: cafe
+              dismissed:
+                summary: The user tapped Not now on a walking route
+                value:
+                  eventId: 0b6c2e7a-91d4-4f3e-8f0a-6d2b9c3e4a21
+                  recommendationType: walking_route
+                  action: dismissed
+      responses:
+        '201':
+          description: Created
+        '200':
+          description: OK
+        '400':
+          description: The request is invalid. 'errors' maps each invalid field to its messages.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+              examples:
+                unknownType:
+                  summary: A recommendation type that does not exist
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                    title: One or more validation errors occurred.
+                    status: 400
+                    errors:
+                      recommendationType:
+                        - '''teleport'' is not one of: nearby_new_place, along_habitual_route, unvisited_cell, walking_route.'
+                    traceId: 0HNQ6B3DSL1F6:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
+  /api/v1/feedback/stats:
+    get:
+      tags:
+        - Feedback
+      summary: Acceptance and visit rates per recommendation type.
+      description: Acceptance rate is accepted over accepted plus dismissed. Visit rate is visited over accepted. Rates are null when the denominator is zero. The range may span at most 366 days.
+      operationId: getFeedbackStats
+      parameters:
+        - name: from
+          in: query
+          description: 'First day, inclusive. Defaults to 30 days before ''to''.'
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: 'Last day, inclusive. Defaults to today (UTC).'
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackStatsResponse'
+              examples:
+                mixed:
+                  summary: 'Some types have feedback, one has none'
+                  value:
+                    from: '2026-10-01'
+                    to: '2026-11-22'
+                    types:
+                      - recommendationType: nearby_new_place
+                        accepted: 14
+                        dismissed: 6
+                        visited: 9
+                        acceptanceRate: 0.7
+                        visitRate: 0.64285713
+                      - recommendationType: along_habitual_route
+                        accepted: 8
+                        dismissed: 8
+                        visited: 3
+                        acceptanceRate: 0.5
+                        visitRate: 0.375
+                      - recommendationType: unvisited_cell
+                        accepted: 2
+                        dismissed: 10
+                        visited: 1
+                        acceptanceRate: 0.16666667
+                        visitRate: 0.5
+                      - recommendationType: walking_route
+                        accepted: 0
+                        dismissed: 0
+                        visited: 0
+        '400':
+          description: The request is invalid. 'errors' maps each invalid field to its messages.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+              examples:
+                rangeTooLong:
+                  summary: More than 366 days
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                    title: One or more validation errors occurred.
+                    status: 400
+                    errors:
+                      to:
+                        - The range must not exceed 366 days.
+                    traceId: 0HNQ6B3DSL1FD:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
+  /api/v1/places/near:
+    get:
+      tags:
+        - Places
+      summary: 'Places within a radius of a point, nearest first.'
+      description: Distance is geodesic in metres. A category matches either the primary or an alternate category of a place.
+      operationId: findPlacesNear
+      parameters:
+        - name: lat
+          in: query
+          description: Latitude in WGS84 degrees.
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: lon
+          in: query
+          description: Longitude in WGS84 degrees.
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: radius
+          in: query
+          description: 'Search radius in metres, 10-5000.'
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: category
+          in: query
+          description: Category code matched against primary and alternate categories.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: 'Maximum number of places, 1-200, default 50.'
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlaceResponse'
+              examples:
+                found:
+                  summary: Two nearest places within 300 m of Akropolis
+                  value:
+                    - id: 8253
+                      externalId: 350917ff-dbcf-46dc-a0d4-1a9b41a1199a
+                      name: 'Triumph Lingerie Partner - UAB MEKTA, SC Akropolis'
+                      category: lingerie_store
+                      confidence: 0.85
+                      lat: 54.687244
+                      lon: 25.27966
+                      h3Cell: 8b1f4030c610fff
+                      distanceMeters: 5.4
+                    - id: 8290
+                      externalId: fa01feb7-83e4-48bd-b898-a679deb51e4f
+                      name: Sixt
+                      category: car_rental_service
+                      confidence: 0.8
+                      lat: 54.687157
+                      lon: 25.279652
+                      h3Cell: 8b1f4030c613fff
+                      distanceMeters: 5.7
+                empty:
+                  summary: Nothing in the radius
+                  value: [ ]
+        '400':
+          description: The request is invalid. 'errors' maps each invalid field to its messages.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+              examples:
+                latitudeOutOfRange:
+                  summary: Latitude above 90
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                    title: One or more validation errors occurred.
+                    status: 400
+                    errors:
+                      lat:
+                        - Latitude must be between -90 and 90.
+                    traceId: 0HNQ6B3DSL1EP:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
+  /api/v1/places/in-bbox:
+    get:
+      tags:
+        - Places
+      summary: 'Places inside a bounding box, most confident first.'
+      description: 'The box may cover at most 0.25 square degrees, for example 0.5 by 0.5 degrees, about 55 by 32 km around Vilnius.'
+      operationId: findPlacesInBoundingBox
+      parameters:
+        - name: minLat
+          in: query
+          description: South edge latitude.
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: minLon
+          in: query
+          description: West edge longitude.
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: maxLat
+          in: query
+          description: North edge latitude.
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: maxLon
+          in: query
+          description: East edge longitude.
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: category
+          in: query
+          description: Category code.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: 'Maximum number of places, 1-200, default 50.'
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlaceResponse'
+              examples:
+                cafes:
+                  summary: 'Cafes in the old town, category=cafe&limit=2'
+                  value:
+                    - id: 8382
+                      externalId: 9c022ea4-de07-496f-86bc-222ef8873252
+                      name: Cat Cafe
+                      category: cafe
+                      confidence: 0.997
+                      lat: 54.68657
+                      lon: 25.283207
+                      h3Cell: 8b1f4030c6e0fff
+                    - id: 7794
+                      externalId: 80a2b819-d5b8-4745-afae-b59d2232ac52
+                      name: Vero Cafe
+                      category: cafe
+                      confidence: 0.989
+                      lat: 54.688156
+                      lon: 25.274885
+                      h3Cell: 8b1f4030c786fff
+        '400':
+          description: The request is invalid. 'errors' maps each invalid field to its messages.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+              examples:
+                boxTooLarge:
+                  summary: A one by one degree box
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                    title: One or more validation errors occurred.
+                    status: 400
+                    errors:
+                      bbox:
+                        - The bounding box must not exceed 0.25 square degrees.
+                    traceId: 0HNQ6B3DSL1F9:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
+  /api/v1/places/by-cells:
+    post:
+      tags:
+        - Places
+      summary: Places inside H3 cells of resolution 7-11.
+      description: 'Each cell is expanded to its resolution 11 children. At most 500 cells and 20,000 expanded cells per request.'
+      operationId: findPlacesByCells
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlacesByCellsRequest'
+            examples:
+              oneCell:
+                summary: One resolution 11 cell
+                value:
+                  cells:
+                    - 8b1f4030c610fff
+                  limit: 2
+              coarseCellWithCategory:
+                summary: 'A resolution 9 cell, restaurants only'
+                value:
+                  cells:
+                    - 891f4030c63ffff
+                  category: restaurant
+                  limit: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlaceResponse'
+              examples:
+                found:
+                  summary: Places in the cell
+                  value:
+                    - id: 8247
+                      externalId: a46a077e-cdc8-4751-af2b-f3c12b6564f1
+                      name: Katpėdėlė
+                      category: restaurant
+                      confidence: 0.963
+                      lat: 54.68742
+                      lon: 25.279253
+                      h3Cell: 8b1f4030c610fff
+                    - id: 8253
+                      externalId: 350917ff-dbcf-46dc-a0d4-1a9b41a1199a
+                      name: 'Triumph Lingerie Partner - UAB MEKTA, SC Akropolis'
+                      category: lingerie_store
+                      confidence: 0.85
+                      lat: 54.687244
+                      lon: 25.27966
+                      h3Cell: 8b1f4030c610fff
+        '400':
+          description: The request is invalid. 'errors' maps each invalid field to its messages.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+              examples:
+                invalidCell:
+                  summary: A string that is not an H3 index
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                    title: One or more validation errors occurred.
+                    status: 400
+                    errors:
+                      cells:
+                        - '''abc'' is not an H3 cell.'
+                    traceId: 0HNQ6B3DSL1FC:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
+  /api/v1/shares:
+    post:
+      tags:
+        - Shares
+      summary: Publishes an achievement with a generalised image and returns its public link.
+      description: 'Requires a bearer token. The image must be a PNG, JPEG or WebP of at most 300 KB whose bytes match the declared content type. The app is expected to blur the home area before upload.'
+      operationId: createShare
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShareRequest'
+            examples:
+              png:
+                summary: 'A 1x1 PNG, base64'
+                value:
+                  achievementName: 10 new streets in November
+                  achievedOn: '2026-11-21'
+                  image:
+                    contentType: image/png
+                    data: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareResponse'
+              examples:
+                created:
+                  summary: The Location header points at the share
+                  value:
+                    id: 185affbe-18ad-4510-a624-8945c4c100ff
+                    achievementName: 10 new streets in November
+                    achievedOn: '2026-11-21'
+                    imageUrl: /api/v1/shares/185affbe-18ad-4510-a624-8945c4c100ff/image
+                    createdAt: '2026-11-21T23:10:29.5148956+00:00'
+        '400':
+          description: The request is invalid. 'errors' maps each invalid field to its messages.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+              examples:
+                contentMismatch:
+                  summary: The bytes are not the declared PNG
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                    title: One or more validation errors occurred.
+                    status: 400
+                    errors:
+                      image.contentType:
+                        - 'Image must be a PNG, JPEG or WebP file matching its declared content type.'
+                    traceId: 0HNQ6B3DSL1FE:00000001
+        '401':
+          description: 'The bearer token is missing or invalid, or the credentials are wrong.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                noToken:
+                  summary: No Authorization header
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.2
+                    title: Unauthorized
+                    status: 401
+                    traceId: 0HNQ6B3DSL1FB:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - bearer: [ ]
+  '/api/v1/shares/{id}':
+    get:
+      tags:
+        - Shares
+      summary: Public achievement data for a share link.
+      description: 'Anonymous. Returns only the achievement name, date and image link, never the owner.'
+      operationId: getShare
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareResponse'
+              examples:
+                found:
+                  summary: A public share
+                  value:
+                    id: 185affbe-18ad-4510-a624-8945c4c100ff
+                    achievementName: 10 new streets in November
+                    achievedOn: '2026-11-21'
+                    imageUrl: /api/v1/shares/185affbe-18ad-4510-a624-8945c4c100ff/image
+                    createdAt: '2026-11-21T23:10:29.5148956+00:00'
+        '404':
+          description: The resource does not exist or is not owned by the caller.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unknown:
+                  summary: No share with this id
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.5
+                    title: Resource not found.
+                    status: 404
+                    detail: Share '00000000-0000-0000-0000-000000000001' was not found.
+                    traceId: 0HNQ6B3DSL1F8:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
+    delete:
+      tags:
+        - Shares
+      summary: Removes a share owned by the caller.
+      description: Requires a bearer token. Shares owned by someone else answer 404 so their existence is not revealed.
+      operationId: deleteShare
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+        '401':
+          description: 'The bearer token is missing or invalid, or the credentials are wrong.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                noToken:
+                  summary: No Authorization header
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.2
+                    title: Unauthorized
+                    status: 401
+                    traceId: 0HNQ6B3DSL1FB:00000001
+        '404':
+          description: The resource does not exist or is not owned by the caller.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                notOwned:
+                  summary: The share belongs to someone else or does not exist
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.5
+                    title: Resource not found.
+                    status: 404
+                    detail: Share '185affbe-18ad-4510-a624-8945c4c100ff' was not found.
+                    traceId: 0HNQ6B3DSL1FF:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - bearer: [ ]
+  '/api/v1/shares/{id}/image':
+    get:
+      tags:
+        - Shares
+      summary: The generalised achievement image.
+      description: Anonymous. Returns the stored image bytes with their original content type.
+      operationId: getShareImage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: The resource does not exist or is not owned by the caller.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unknown:
+                  summary: No share with this id
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.5
+                    title: Resource not found.
+                    status: 404
+                    detail: Share '00000000-0000-0000-0000-000000000001' was not found.
+                    traceId: 0HNQ6B3DSL1F8:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
+components:
+  schemas:
+    CreateShareRequest:
+      required:
+        - achievedOn
+        - achievementName
+        - image
+      type: object
+      properties:
+        achievementName:
+          type: string
+        achievedOn:
+          type: string
+          format: date
+        image:
+          $ref: '#/components/schemas/ShareImageRequest'
+      additionalProperties: false
+    FeedbackStatsResponse:
+      required:
+        - types
+      type: object
+      properties:
+        from:
+          type: string
+          format: date
+          nullable: true
+        to:
+          type: string
+          format: date
+          nullable: true
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendationTypeStatsResponse'
+      additionalProperties: false
+    LoginRequest:
+      required:
+        - email
+        - password
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      additionalProperties: false
+    LoginResponse:
+      required:
+        - accessToken
+        - expiresAt
+        - tokenType
+      type: object
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    PlaceResponse:
+      required:
+        - category
+        - confidence
+        - externalId
+        - h3Cell
+        - id
+        - lat
+        - lon
+        - name
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        externalId:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        confidence:
+          type: number
+          format: double
+        lat:
+          type: number
+          format: double
+        lon:
+          type: number
+          format: double
+        h3Cell:
+          type: string
+        distanceMeters:
+          type: number
+          format: double
+          nullable: true
+      additionalProperties: false
+    PlacesByCellsRequest:
+      required:
+        - cells
+      type: object
+      properties:
+        cells:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+          nullable: true
+        limit:
+          type: integer
+          format: int32
+          nullable: true
+      additionalProperties: false
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          format: int32
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+        instance:
+          type: string
+          nullable: true
+      additionalProperties: { }
+    RecommendationTypeStatsResponse:
+      required:
+        - accepted
+        - dismissed
+        - recommendationType
+        - visited
+      type: object
+      properties:
+        recommendationType:
+          type: string
+        accepted:
+          type: integer
+          format: int64
+        dismissed:
+          type: integer
+          format: int64
+        visited:
+          type: integer
+          format: int64
+        acceptanceRate:
+          type: number
+          format: double
+          nullable: true
+        visitRate:
+          type: number
+          format: double
+          nullable: true
+      additionalProperties: false
+    RegisterRequest:
+      required:
+        - email
+        - password
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      additionalProperties: false
+    RegisterResponse:
+      required:
+        - userId
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+      additionalProperties: false
+    ShareImageRequest:
+      required:
+        - contentType
+        - data
+      type: object
+      properties:
+        contentType:
+          type: string
+        data:
+          type: string
+      additionalProperties: false
+    ShareResponse:
+      required:
+        - achievedOn
+        - achievementName
+        - createdAt
+        - id
+        - imageUrl
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        achievementName:
+          type: string
+        achievedOn:
+          type: string
+          format: date
+        imageUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    SubmitFeedbackRequest:
+      required:
+        - action
+        - eventId
+        - recommendationType
+      type: object
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        recommendationType:
+          type: string
+        action:
+          type: string
+        category:
+          type: string
+          nullable: true
+      additionalProperties: false
+    ValidationProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          format: int32
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+        instance:
+          type: string
+          nullable: true
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      additionalProperties: { }
+  securitySchemes:
+    bearer:
+      type: http
+      description: Access token from POST /api/v1/auth/login.
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+  - name: Auth
+    description: Accounts used only to own achievement shares.
+  - name: Feedback
+    description: 'Anonymous, opt-in feedback on recommendations and its aggregate statistics.'
+  - name: Places
+    description: Read-only place catalogue built from Overture Places.
+  - name: Shares
+    description: Public achievement links.
