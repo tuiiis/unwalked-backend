@@ -2,6 +2,8 @@
 
 This guide takes you from a fresh clone to a first authenticated request. It takes about five minutes if Docker is already installed.
 
+A public instance runs at https://unwalked-api.onrender.com with the Vilnius catalogue and the test accounts loaded. To use it, replace `http://localhost:18080` in the examples below with that address and skip the first step. It sleeps after 15 minutes without traffic, so the first request after a pause can take about a minute.
+
 ## 1. Start the API
 
 Copy the environment file and replace every `change-me` with your own value. The signing key must be at least 32 characters.
