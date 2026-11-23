@@ -18,8 +18,8 @@ jobs:
     name: Tests and coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
       - run: dotnet restore
@@ -36,7 +36,7 @@ jobs:
           coverage=$(grep -m1 "Line coverage:" TestResults/report/Summary.txt | grep -oE "[0-9]+(\.[0-9]+)?")
           echo "Line coverage is ${coverage}%, the minimum is ${MIN_LINE_COVERAGE}%"
           awk -v c="$coverage" -v m="$MIN_LINE_COVERAGE" 'BEGIN { exit (c + 0 >= m + 0) ? 0 : 1 }'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
@@ -46,8 +46,8 @@ jobs:
     name: Vulnerable packages
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
       - run: dotnet restore
@@ -60,8 +60,8 @@ jobs:
     name: OpenAPI lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npx --yes @stoplight/spectral-cli@6.15.0 lint docs/api/openapi.yaml --fail-severity error
@@ -71,5 +71,5 @@ jobs:
     name: Docker image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: docker build --target api --tag unwalked-api:ci .
