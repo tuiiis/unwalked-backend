@@ -17,6 +17,6 @@ public sealed class JwtOptions
     [MinLength(MinSigningKeyLength)]
     public string SigningKey { get; set; } = string.Empty;
 
-    [Range(1, 1440)]
-    public int LifetimeMinutes { get; set; } = 60;
+    [Range(1, 43_200)]
+    public int LifetimeMinutes { get; set; } = 43_200;
 }
