@@ -122,4 +122,13 @@ dotnet tool restore
 dotnet reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:TestResults/report -reporttypes:"Html;TextSummary"
 ```
 
-Open `TestResults/report/index.html`. On 22.11.2026 the suite had 181 tests with 98.2% line and 93% branch coverage.
+Open `TestResults/report/index.html`. On 23.11.2026 the suite had 181 tests with 98.2% line and 93% branch coverage.
+
+The business logic lives in Domain and Application, and the unit tests alone cover it. Infrastructure and Api are covered by the integration tests against a real PostGIS database.
+
+| Assembly | Unit tests, lines | Integration tests, lines | Both, lines |
+|---|---|---|---|
+| Unwalked.Domain | 98.3% | 82.8% | 98.2% |
+| Unwalked.Application | 96.2% | 90.9% | 100% |
+| Unwalked.Infrastructure | 24.3% | 96.2% | 98.4% |
+| Unwalked.Api | none | 97.3% | 97.2% |
