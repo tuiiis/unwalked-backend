@@ -1,51 +1,37 @@
 # Unwalked: back-end
 
-Back-end for the bachelor thesis "Mobile Application for Recommending New Places and Walking Routes Based on the Analysis of the User's Habitual Geography". Documentation and business analysis: [unwalked-thesis](https://github.com/tuiiis/unwalked-thesis).
+Back-end for the bachelor thesis "Mobile Application for Recommending New Places and Walking Routes Based on the Analysis of the User's Habitual Geography". Client: [unwalked-android](https://github.com/tuiiis/unwalked-android). Business analysis: [unwalked-thesis](https://github.com/tuiiis/unwalked-thesis).
 
-ASP.NET Core 10 with PostgreSQL 17 and PostGIS 3.5. Hosting: a Docker container on Heroku in the EU and managed PostgreSQL on Neon in Frankfurt. A public instance runs at https://unwalked-api-7820623db8c8.herokuapp.com with Swagger UI at https://unwalked-api-7820623db8c8.herokuapp.com/swagger. [Deployment](docs/deployment.md) explains how to set them up.
+ASP.NET Core 10, PostgreSQL 17 with PostGIS 3.5, EF Core. The API serves a place catalogue, accounts for achievement shares and anonymous feedback on recommendations. The catalogue starts with Vilnius from Overture Places, and areas elsewhere are loaded from OpenStreetMap when a client asks for them.
 
-## API documentation
+Public instance: https://unwalked-api-7820623db8c8.herokuapp.com, Swagger UI at [/swagger](https://unwalked-api-7820623db8c8.herokuapp.com/swagger). It runs on Heroku in the EU with the database on Neon in Frankfurt, as described in [Deployment](docs/deployment.md).
 
-Start at [docs/api](docs/api/README.md). It has a Getting started guide, two step-by-step tutorials, guides on authentication, errors, limits, idempotency and versioning, and the [OpenAPI specification](docs/api/openapi.yaml). A running instance serves Swagger UI at http://localhost:18080/swagger.
+## Documentation
 
-## Database
-
-| Document | Content |
+| Topic | Where |
 |---|---|
-| [Data dictionary](docs/database/data-dictionary.md) | Logical schema, every table and column, indexes, views, routines, roles, personal data, and the on-device Room schema |
-| [db/schema.sql](db/schema.sql) | Full DDL generated from the migrations |
-| `src/Unwalked.Infrastructure/Persistence/Migrations` | EF Core migrations, the source of truth |
-| `db/init` | Logins and group roles created when the container starts |
-| `db/seed/reference` | Reference data for every environment |
-| `db/seed/test` | Test data for local development |
+| API: getting started, tutorials, guides, reference, changelog | [docs/api](docs/api/README.md) |
+| OpenAPI specification | [docs/api/openapi.yaml](docs/api/openapi.yaml) |
+| Database: schema, dictionary, roles, seeds | [docs/database/data-dictionary.md](docs/database/data-dictionary.md), DDL in [db/schema.sql](db/schema.sql) |
+| Deployment | [docs/deployment.md](docs/deployment.md) |
 
-## Running the database only
+## Project layout
 
-Requires Docker. Copy the environment file and set your own passwords.
-
-```bash
-cp .env.example .env
+```text
+src/
+  Unwalked.Domain/          entities, value objects, H3 and geo rules, no dependencies
+  Unwalked.Application/     use cases and the interfaces they need
+  Unwalked.Infrastructure/  EF Core and Npgsql, migrations, JWT, password hashing, OpenStreetMap loading
+  Unwalked.Api/             controllers, contracts, error handling, OpenAPI
+  Unwalked.Tools/           command line: migrate, seed, load-places
+tests/
+  Unwalked.UnitTests/       NUnit, Domain, Application and Infrastructure parts without a database
+  Unwalked.IntegrationTests/ the whole API against PostGIS in Testcontainers
+db/                         logins, reference and test seeds, generated schema.sql
+docs/                       API, database and deployment documentation
 ```
 
-Start PostgreSQL, apply the migrations and load reference data. The API is not started.
-
-```bash
-docker compose run --rm --build seed
-```
-
-Add test data.
-
-```bash
-docker compose --profile test-data run --rm seed-test
-```
-
-Connect as any of the [database logins](#database-logins) with its password from `.env`.
-
-```bash
-docker compose exec db psql -h localhost -U unwalked_analyst -d unwalked
-```
-
-The place catalogue is exported and loaded as described below. Remove the database with `docker compose down -v`.
+Each layer depends only on the ones above it in this list.
 
 ## Running locally
 
@@ -53,15 +39,10 @@ Requires Docker. Copy the environment file and set your own passwords and a sign
 
 ```bash
 cp .env.example .env
-```
-
-Start the database, apply migrations, load reference data and run the API.
-
-```bash
 docker compose up --build
 ```
 
-The API listens on http://localhost:18080 and the database on `localhost:55432`.
+This starts PostgreSQL, applies the migrations, loads reference data and runs the API on http://localhost:18080 with Swagger UI at `/swagger`. The database listens on `localhost:55432`.
 
 Add test accounts, achievement cards, reactions and region packs.
 
@@ -69,77 +50,65 @@ Add test accounts, achievement cards, reactions and region packs.
 docker compose --profile test-data run --rm seed-test
 ```
 
-The place catalogue is not stored in the repository. It is exported from the public Overture Maps release 2026-09-23.1 (CDLA-Permissive-2.0) for the Vilnius region bounds. The export needs [DuckDB](https://duckdb.org/docs/installation/) and network access.
+Test accounts are `ona@example.test`, `jonas@example.test` and `rasa@example.test` with the password `Unwalked-test-1`.
+
+The Vilnius catalogue is not stored in the repository. Export it from the public Overture Maps release 2026-09-23.1 (CDLA-Permissive-2.0) with [DuckDB](https://duckdb.org/docs/installation/), then load it.
 
 ```bash
 mkdir -p ../data/out
 (cd ../data/out && duckdb < "$OLDPWD/tools/export-vilnius-places.sql")
-```
-
-Then load it. `PLACES_DATA_DIR` points to `../data/out` by default.
-
-```bash
 docker compose --profile load run --rm load
 ```
-
-Test accounts are `ona@example.test`, `jonas@example.test` and `rasa@example.test` with the password `Unwalked-test-1`.
 
 ## Database logins
 
 | Login | Purpose |
 |---|---|
 | `unwalked_migrator` | Migrations, seeds and the catalogue loader |
-| `unwalked_api` | The API, read access plus the few writes it needs |
-| `unwalked_analyst` | Research queries on reactions and masked accounts only |
+| `unwalked_api` | The API: reads, plus inserts for accounts, shares, feedback and loaded areas. No updates or deletes on the catalogue |
+| `unwalked_analyst` | Research queries on feedback and masked accounts only |
 
 Passwords come from `.env`, which is never committed.
 
-## Tools
-
-```bash
-dotnet run --project src/Unwalked.Tools -- migrate
-dotnet run --project src/Unwalked.Tools -- seed db/seed/reference
-dotnet run --project src/Unwalked.Tools -- load-places vilnius path/to/vilnius_places.csv
-```
-
-The tools read the connection string from `ConnectionStrings__Unwalked`.
-
-## Continuous integration
-
-GitHub Actions runs [ci.yml](.github/workflows/ci.yml) on every push and pull request. Heroku deploys a commit to production only after all four jobs pass.
-
-| Job | What it checks |
-|---|---|
-| Tests and coverage | Builds the solution, runs unit and integration tests, publishes the coverage report and fails below 80% line coverage |
-| Vulnerable packages | Fails when any NuGet package, including transitive ones, has a known vulnerability |
-| OpenAPI lint | Validates the specification with Spectral and Redocly |
-| Docker image | Builds the production image |
-
 ## Tests
-
-Unit tests use NUnit. Integration tests start PostGIS in Testcontainers, apply the migrations and the reference seed, and check the API together with database constraints, the trigger, the procedure, the views and role permissions.
-
-Requires the .NET SDK version from `global.json` (10.0.100 or a newer feature band) and Docker for Testcontainers.
 
 ```bash
 dotnet test
 ```
 
-Coverage is collected with coverlet and turned into an HTML report with ReportGenerator, both pinned in the repository.
+Requires the .NET SDK from `global.json` and Docker for Testcontainers. 150 unit tests and 54 integration tests. The integration tests apply the migrations to a real PostGIS and check the API together with constraints, the trigger, the procedure, the views and role permissions.
+
+Coverage on 24.11.2026 is 97.9% of lines and 92.9% of branches. Unit tests alone cover the business logic: Domain 95.7%, Application 96.3%. To build the report:
 
 ```bash
 dotnet test --settings coverage.runsettings --collect "XPlat Code Coverage" --results-directory TestResults
 dotnet tool restore
-dotnet reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:TestResults/report -reporttypes:"Html;TextSummary"
+dotnet reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:TestResults/report -reporttypes:Html
 ```
 
-Open `TestResults/report/index.html`. On 23.11.2026 the suite had 181 tests with 98.2% line and 93% branch coverage.
+## Continuous integration
 
-The business logic lives in Domain and Application, and the unit tests alone cover it. Infrastructure and Api are covered by the integration tests against a real PostGIS database.
+[ci.yml](.github/workflows/ci.yml) runs on every push and pull request. Heroku deploys a commit only after all four jobs pass.
 
-| Assembly | Unit tests, lines | Integration tests, lines | Both, lines |
-|---|---|---|---|
-| Unwalked.Domain | 98.3% | 82.8% | 98.2% |
-| Unwalked.Application | 96.2% | 90.9% | 100% |
-| Unwalked.Infrastructure | 24.3% | 96.2% | 98.4% |
-| Unwalked.Api | none | 97.3% | 97.2% |
+| Job | What it checks |
+|---|---|
+| Tests and coverage | Unit and integration tests, fails below 80% line coverage |
+| Vulnerable packages | Any NuGet package with a known vulnerability, including transitive ones |
+| OpenAPI lint | The specification with Spectral and Redocly |
+| Docker image | The production image builds |
+
+## Where the Back-end criterion is implemented
+
+| Requirement | Where |
+|---|---|
+| Framework, ORM, database | ASP.NET Core 10, EF Core with Npgsql and NetTopologySuite, PostgreSQL with PostGIS |
+| Layered architecture | The four projects in [Project layout](#project-layout) |
+| API description | Swagger UI, [openapi.yaml](docs/api/openapi.yaml), XML comments on the public API |
+| Global error handling | `Api/ErrorHandling/ApplicationExceptionHandler.cs`, Problem Details with a `traceId` |
+| Structured logging | Serilog with compact JSON in `Api/Program.cs` |
+| Authentication and passwords | JWT bearer tokens in `Infrastructure/Security`, PBKDF2 hashing through ASP.NET Identity |
+| Validation and status codes | Domain rules raise validation errors, mapped to 400, 401, 404, 409 and 429 |
+| Secrets | Environment variables and Heroku config vars only, `.env` is git-ignored |
+| Production deployment | Heroku and Neon, [docs/deployment.md](docs/deployment.md) |
+| Tests and coverage | [Tests](#tests) |
+| CI/CD with quality gates | [Continuous integration](#continuous-integration) |
