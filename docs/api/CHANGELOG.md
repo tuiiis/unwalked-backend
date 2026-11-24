@@ -2,6 +2,13 @@
 
 All notable changes to the API are listed here. The format follows Keep a Changelog and versions follow semantic versioning.
 
+## [1.1.0] - 2026-11-24
+
+### Added
+
+- Areas: `GET /areas/{cell}` and `PUT /areas/{cell}`. An area outside the preloaded regions is filled with named places from OpenStreetMap in the background, so the catalogue works beyond Vilnius
+- `429 Too Many Requests` with a `Retry-After` header when area loading limits are reached
+
 ## [1.0.0] - 2026-11-22
 
 ### Added

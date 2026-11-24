@@ -208,12 +208,12 @@ The catalogue has no raw layer on the server. The Overture export is a CSV file 
 
 ### region
 
-A city or area for which the catalogue and a region pack are built.
+A city or area for which the catalogue and a region pack are built. Regions are either preloaded from Overture Places, such as `vilnius`, or added by the API when a client asks for an area outside every region. An added region is one H3 cell of resolution 5, about 250 km², with the code `area-` followed by the cell, for example `area-851f40d3fffffff`.
 
 | Column | Type | Null | Description |
 |---|---|---|---|
 | id | integer identity | no | Primary key |
-| code | varchar(32) | no | Stable slug used in URLs and object keys, for example `vilnius`. Unique, lowercase letters, digits and hyphens |
+| code | varchar(32) | no | Stable slug used in URLs and object keys, for example `vilnius` or `area-851f40d3fffffff`. Unique, lowercase letters, digits and hyphens |
 | name | varchar(100) | no | Display name. Must not be blank |
 | bounds | geography(polygon, 4326) | no | Area covered by the catalogue |
 
@@ -243,14 +243,14 @@ Overture Places category codes. Filled by the reference seed.
 
 ### place
 
-A point of interest from Overture Places (CDLA-Permissive 2.0).
+A point of interest from Overture Places (CDLA-Permissive 2.0) or, in regions added on request, from OpenStreetMap (ODbL).
 
 | Column | Type | Null | Description |
 |---|---|---|---|
 | id | bigint identity | no | Primary key |
-| external_id | varchar(64) | no | Overture identifier. Unique, used to reload without duplicates |
+| external_id | varchar(64) | no | Overture identifier, or `osm:` with the element type and id for places from OpenStreetMap, for example `osm:node/1`. Unique, used to reload without duplicates |
 | name | varchar(300) | no | Primary name. Must not be blank |
-| confidence | numeric(4,3) | no | Overture existence confidence from 0 to 1 |
+| confidence | numeric(4,3) | no | Overture existence confidence from 0 to 1. Places from OpenStreetMap get 0.700 |
 | location | geography(point, 4326) | no | Coordinates |
 | h3_r11 | bigint | no | H3 cell at resolution 11 that contains the place |
 | region_id | integer | no | Region, `ON DELETE RESTRICT` |
@@ -264,7 +264,7 @@ A building footprint from Overture Buildings, which is mostly derived from OpenS
 | Column | Type | Null | Description |
 |---|---|---|---|
 | id | bigint identity | no | Primary key |
-| external_id | varchar(64) | no | Overture identifier. Unique, used to reload without duplicates |
+| external_id | varchar(64) | no | Overture identifier, or `osm:` with the element type and id for places from OpenStreetMap, for example `osm:node/1`. Unique, used to reload without duplicates |
 | footprint | geography(multipolygon, 4326) | no | Outline of the building. Must be a valid geometry |
 | h3_r11 | bigint | no | H3 cell at resolution 11 that contains the centroid. Used to split footprints into pack buckets |
 | region_id | integer | no | Region, `ON DELETE RESTRICT` |
@@ -371,13 +371,13 @@ The application never connects as a superuser or as the schema owner. Each login
 |---|---|---|
 | `unwalked_migrator` | yes | Member of `admin`. Creates and owns the tables, runs migrations, seeds and the catalogue loader |
 | `app_read` | no | `SELECT` on catalogue, building, region, pack, account, share and feedback tables and the API views |
-| `app_write` | no | Member of `app_read`. `INSERT`, `DELETE` on `user_account` and `achievement_share`, `INSERT` on `recommendation_feedback` |
+| `app_write` | no | Member of `app_read`. `INSERT`, `DELETE` on `user_account` and `achievement_share`, `INSERT` on `recommendation_feedback`, `INSERT` on `region` and `place` for areas loaded on request |
 | `unwalked_api` | yes | Member of `app_write`. Used by the API |
 | `app_analyst` | no | `SELECT` on `category`, `recommendation_feedback`, `feedback_daily_total`, `v_feedback_summary` and `v_user_account_masked`. No access to `user_account`, `achievement_share`, `place` or `building` |
 | `unwalked_analyst` | yes | Member of `app_analyst`. Used for research queries |
 | `admin` | no | Full rights on the schema |
 
-Nobody but the migrator can run `aggregate_feedback` or change region packs. Integration tests check that the API and analyst logins get `insufficient_privilege` there.
+Nobody but the migrator can run `aggregate_feedback`, change region packs, or update and delete catalogue rows. The API may only add a region and its places when it loads an area, so a mistake in the API can never remove or rewrite existing places. Integration tests check that the API and analyst logins get `insufficient_privilege` there.
 
 ## Personal data
 

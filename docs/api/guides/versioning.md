@@ -2,7 +2,7 @@
 
 ## Scheme
 
-The major version is part of the path: `/api/v1/...`. The specification itself follows semantic versioning in `info.version`, currently `1.0.0`.
+The major version is part of the path: `/api/v1/...`. The specification itself follows semantic versioning in `info.version`, currently `1.1.0`.
 
 | Change | Example | Version |
 |---|---|---|

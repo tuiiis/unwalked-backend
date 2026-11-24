@@ -4,6 +4,14 @@ The app knows where a person usually walks because it aggregates location histor
 
 You need the API running with the Vilnius catalogue loaded, as described in [Getting started](../getting-started.md).
 
+Outside Vilnius, make sure the catalogue covers the area first. An area is the H3 cell of resolution 5 around the user, here Kaunas.
+
+```bash
+curl -i -X PUT http://localhost:18080/api/v1/areas/851f40d3fffffff
+```
+
+The first answer is `202` with `"status":"Loading"`. Ask again with `GET` every few seconds until the status is `Ready`, which usually takes under a minute.
+
 ## Step 1. Look around one point
 
 Start with the simplest question: what is within 300 metres of here.

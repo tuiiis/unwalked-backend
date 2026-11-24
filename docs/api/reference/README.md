@@ -23,6 +23,13 @@ Base path: `/api/v1`. All bodies are JSON in UTF-8. Errors are `application/prob
 | GET | `/places/in-bbox` | `findPlacesInBoundingBox` | 200 `PlaceResponse[]` | 400 |
 | POST | `/places/by-cells` | `findPlacesByCells` | 200 `PlaceResponse[]` | 400 |
 
+## Areas
+
+| Method | Path | Operation | Success | Errors |
+|---|---|---|---|---|
+| GET | `/areas/{cell}` | `getArea` | 200 `AreaResponse` | 400 |
+| PUT | `/areas/{cell}` | `ensureArea` | 200 ready, 202 loading started | 400, 429 |
+
 ## Feedback
 
 | Method | Path | Operation | Success | Errors |

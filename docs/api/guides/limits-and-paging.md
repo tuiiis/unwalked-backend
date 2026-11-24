@@ -30,7 +30,17 @@ Cells of resolution 7 to 11 are accepted. Each one is expanded to its resolution
 
 ## Rate limits
 
-Version 1 has no rate limiting. The API serves a single mobile app during a thesis study. Rate limiting is planned before any public release and will answer `429 Too Many Requests` with a `Retry-After` header.
+Most operations have no rate limiting. The API serves a single mobile app during a thesis study.
+
+Loading a new area calls OpenStreetMap and grows the database, so `PUT /areas/{cell}` has three limits. Each answers `429 Too Many Requests` with a `Retry-After` header in seconds.
+
+| Limit | Value | Retry-After |
+|---|---|---|
+| New area loads per hour, for all clients together | 10 | 10 minutes |
+| Areas loaded on request in total | 200 | 1 hour |
+| Waiting time after a failed load of the same area | 10 minutes | Until the 10 minutes are over |
+
+An area that is already ready, or already loading, never counts against the limits.
 
 ## Feedback statistics range
 

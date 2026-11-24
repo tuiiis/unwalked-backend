@@ -12,6 +12,7 @@ flowchart LR
     api["Unwalked API<br/>ASP.NET Core 10"]
     db[("PostgreSQL 17 + PostGIS<br/>catalogue, shares, feedback")]
     overture[(Overture Places<br/>monthly release)]
+    osm[(OpenStreetMap<br/>Overpass API)]
     tiles[(Protomaps tiles)]
 
     user --> app
@@ -19,6 +20,7 @@ flowchart LR
     friend -- "open share link" --> api
     api --> db
     overture -. "export and load, offline" .-> db
+    api -. "areas on request" .-> osm
     app -- "map tiles" --> tiles
 ```
 
@@ -27,7 +29,8 @@ flowchart LR
 | Resource | Purpose | Auth | Stores personal data |
 |---|---|---|---|
 | `auth` | Accounts for share owners | None | Email and password hash |
-| `places` | Read-only catalogue from Overture Places | None | No |
+| `places` | Read-only catalogue from Overture Places and OpenStreetMap | None | No |
+| `areas` | Areas of the catalogue, loaded from OpenStreetMap on request | None | No. An area is about 250 km², so it does not reveal where a person is |
 | `feedback` | Anonymous reactions to recommendations, for the thesis study | None | No, no account id or location |
 | `shares` | Public achievement links with a generalised image | Token to create and delete | Owner id, never exposed |
 
