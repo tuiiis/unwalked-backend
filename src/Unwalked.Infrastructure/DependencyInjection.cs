@@ -39,10 +39,10 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddSingleton(OverpassEndpoints.Parse(configuration["Areas:OverpassUrls"] ?? OverpassEndpoints.Default));
         services.AddHttpClient<IAreaPlaceSource, OverpassPlaceSource>(client =>
         {
-            client.BaseAddress = new Uri(configuration["Areas:OverpassUrl"] ?? "https://overpass-api.de/api/interpreter");
-            client.Timeout = TimeSpan.FromMinutes(3);
+            client.Timeout = TimeSpan.FromSeconds(100);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Unwalked/0.2 (student diploma project)");
         });
 

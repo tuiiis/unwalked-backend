@@ -47,6 +47,7 @@ public class OverpassPlaceSourceTests
     [Test]
     public async Task RetriesWhileOverpassIsBusy()
     {
+        var asked = new List<string>();
         var answers = new Queue<HttpResponseMessage>(
         [
             new HttpResponseMessage(System.Net.HttpStatusCode.GatewayTimeout),
@@ -56,7 +57,7 @@ public class OverpassPlaceSourceTests
         OverpassPlaceSource.Backoff = [TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero];
         try
         {
-            var source = new OverpassPlaceSource(new HttpClient(new Scripted(answers)) { BaseAddress = new Uri("http://overpass.test/") }, NtsGeometryServices.Instance.CreateGeometryFactory(4326));
+            var source = new OverpassPlaceSource(new HttpClient(new Scripted(answers, asked)), NtsGeometryServices.Instance.CreateGeometryFactory(4326), OverpassEndpoints.Parse("http://main.test/,http://mirror.test/"));
 
             var places = await source.FetchAsync(AreaCell.ForCoordinate(GeoCoordinate.Create(54.8985, 23.9036)), CancellationToken.None);
 
@@ -64,6 +65,7 @@ public class OverpassPlaceSourceTests
             {
                 Assert.That(places, Is.Empty);
                 Assert.That(answers, Is.Empty);
+                Assert.That(asked, Is.EqualTo(new[] { "main.test", "mirror.test" }));
             });
         }
         finally
@@ -75,15 +77,54 @@ public class OverpassPlaceSourceTests
     [Test]
     public void GivesUpOnAnError()
     {
+        var asked = new List<string>();
         var answers = new Queue<HttpResponseMessage>([new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest)]);
-        var source = new OverpassPlaceSource(new HttpClient(new Scripted(answers)) { BaseAddress = new Uri("http://overpass.test/") }, NtsGeometryServices.Instance.CreateGeometryFactory(4326));
+        var source = new OverpassPlaceSource(new HttpClient(new Scripted(answers, asked)), NtsGeometryServices.Instance.CreateGeometryFactory(4326), OverpassEndpoints.Parse("http://main.test/,http://mirror.test/"));
 
         Assert.ThrowsAsync<HttpRequestException>(() => source.FetchAsync(AreaCell.ForCoordinate(GeoCoordinate.Create(54.8985, 23.9036)), CancellationToken.None));
     }
 
-    private sealed class Scripted(Queue<HttpResponseMessage> answers) : HttpMessageHandler
+    private sealed class Scripted(Queue<HttpResponseMessage> answers, List<string> asked) : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Task.FromResult(answers.Dequeue());
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            asked.Add(request.RequestUri!.Host);
+            return Task.FromResult(answers.Dequeue());
+        }
+    }
+
+    [Test]
+    public async Task MovesToTheNextEndpointWhenOneTimesOut()
+    {
+        var asked = new List<string>();
+        var saved = OverpassPlaceSource.Backoff;
+        OverpassPlaceSource.Backoff = [TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero];
+        try
+        {
+            var source = new OverpassPlaceSource(new HttpClient(new TimesOutFirst(asked)), NtsGeometryServices.Instance.CreateGeometryFactory(4326), OverpassEndpoints.Parse("http://main.test/,http://mirror.test/"));
+
+            var places = await source.FetchAsync(AreaCell.ForCoordinate(GeoCoordinate.Create(54.8985, 23.9036)), CancellationToken.None);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(places, Is.Empty);
+                Assert.That(asked, Is.EqualTo(new[] { "main.test", "mirror.test" }));
+            });
+        }
+        finally
+        {
+            OverpassPlaceSource.Backoff = saved;
+        }
+    }
+
+    private sealed class TimesOutFirst(List<string> asked) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            asked.Add(request.RequestUri!.Host);
+            return asked.Count == 1
+                ? throw new TaskCanceledException("timed out")
+                : Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent("""{"elements":[]}""") });
+        }
     }
 }

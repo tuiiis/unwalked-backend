@@ -12,7 +12,7 @@ namespace Unwalked.Infrastructure.Areas;
 /// <summary>
 /// Reads named places of an area from OpenStreetMap through the Overpass API.
 /// </summary>
-public sealed class OverpassPlaceSource(HttpClient http, GeometryFactory geometryFactory) : IAreaPlaceSource
+public sealed class OverpassPlaceSource(HttpClient http, GeometryFactory geometryFactory, OverpassEndpoints endpoints) : IAreaPlaceSource
 {
     /// <summary>
     /// Name of the HTTP client configured for Overpass.
@@ -29,7 +29,18 @@ public sealed class OverpassPlaceSource(HttpClient http, GeometryFactory geometr
         for (var attempt = 0; ; attempt++)
         {
             using var content = new FormUrlEncodedContent([new KeyValuePair<string, string>("data", query)]);
-            using var response = await http.PostAsync(string.Empty, content, cancellationToken);
+            HttpResponseMessage response;
+            try
+            {
+                response = await http.PostAsync(endpoints.Urls[attempt % endpoints.Urls.Count], content, cancellationToken);
+            }
+            catch (Exception exception) when (attempt < Backoff.Length && !cancellationToken.IsCancellationRequested && exception is HttpRequestException or TaskCanceledException)
+            {
+                await Task.Delay(Backoff[attempt], cancellationToken);
+                continue;
+            }
+
+            using var answer = response;
             if (response.IsSuccessStatusCode)
             {
                 await using var body = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -46,7 +57,7 @@ public sealed class OverpassPlaceSource(HttpClient http, GeometryFactory geometr
     }
 
     /// <summary>
-    /// Waits between attempts while Overpass answers that it is busy.
+    /// Waits between attempts while Overpass answers that it is busy. Each attempt goes to the next endpoint.
     /// </summary>
     public static TimeSpan[] Backoff { get; set; } = [TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(45), TimeSpan.FromSeconds(90)];
 
