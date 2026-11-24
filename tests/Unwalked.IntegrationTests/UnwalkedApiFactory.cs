@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Unwalked.IntegrationTests;
 
-public sealed class UnwalkedApiFactory : WebApplicationFactory<Program>
+public class UnwalkedApiFactory : WebApplicationFactory<Program>
 {
     public const string SigningKey = "integration-test-signing-key-long-enough";
 

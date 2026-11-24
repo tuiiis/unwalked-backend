@@ -1,18 +1,165 @@
 openapi: 3.0.4
 info:
   title: Places and sharing API
-  description: 'Place catalogue queries, achievement share links and anonymous recommendation feedback for the mobile app.'
+  description: 'Place catalogue queries, catalogue areas, achievement share links and anonymous recommendation feedback for the mobile app.'
   contact:
     name: Tatsiana Halaburda
     url: https://ehu.lt
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
-  version: 1.0.0
+  version: '1.1.0'
 servers:
   - url: /
     description: The host that serves this document
 paths:
+  '/api/v1/areas/{cell}':
+    get:
+      tags:
+        - Areas
+      summary: State of an area.
+      description: 'An area is an H3 cell of resolution 5, about 250 square kilometres. Ready means places for it are in the catalogue.'
+      operationId: getArea
+      parameters:
+        - name: cell
+          in: path
+          description: H3 cell of resolution 5 as a hex string.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaResponse'
+              examples:
+                ready:
+                  summary: Kaunas after it was loaded
+                  value:
+                    cell: 851f40d3fffffff
+                    status: Ready
+                    region: area-851f40d3fffffff
+                loading:
+                  summary: Kaunas while it loads
+                  value:
+                    cell: 851f40d3fffffff
+                    status: Loading
+                missing:
+                  summary: 'Riga, never requested'
+                  value:
+                    cell: 851f6077fffffff
+                    status: Missing
+        '400':
+          description: The request is invalid. 'errors' maps each invalid field to its messages.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+              examples:
+                wrongResolution:
+                  summary: A resolution 11 cell
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                    title: One or more validation errors occurred.
+                    status: 400
+                    errors:
+                      cell:
+                        - An area is an H3 cell of resolution 5.
+                    traceId: 0HNQ6B3DSL1FG:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
+    put:
+      tags:
+        - Areas
+      summary: Make sure an area is in the catalogue.
+      description: 'Answers 200 when the area is ready. Otherwise starts loading named places of the area from OpenStreetMap and answers 202. Poll the state with GET until it is ready. Idempotent: repeating the request while the area loads starts nothing new.'
+      operationId: ensureArea
+      parameters:
+        - name: cell
+          in: path
+          description: H3 cell of resolution 5 as a hex string.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaResponse'
+              examples:
+                preloaded:
+                  summary: 'Vilnius, covered by a preloaded region'
+                  value:
+                    cell: 851f4033fffffff
+                    status: Ready
+                    region: vilnius
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaResponse'
+              examples:
+                started:
+                  summary: 'Kaunas, loading started'
+                  value:
+                    cell: 851f40d3fffffff
+                    status: Loading
+        '400':
+          description: The request is invalid. 'errors' maps each invalid field to its messages.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '429':
+          description: Too Many Requests
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                failedRecently:
+                  summary: The last load failed less than 10 minutes ago
+                  value:
+                    type: https://tools.ietf.org/html/rfc6585#section-4
+                    title: Too many requests.
+                    status: 429
+                    detail: Loading this area failed a moment ago. Try again later.
+                    traceId: 0HNQ6B3DSL1FH:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - { }
   /api/v1/auth/register:
     post:
       tags:
@@ -907,6 +1054,27 @@ paths:
         - { }
 components:
   schemas:
+    AreaResponse:
+      required:
+        - cell
+        - status
+      type: object
+      properties:
+        cell:
+          type: string
+        status:
+          $ref: '#/components/schemas/AreaStatus'
+        region:
+          type: string
+          nullable: true
+      additionalProperties: false
+    AreaStatus:
+      enum:
+        - Ready
+        - Loading
+        - Failed
+        - Missing
+      type: string
     CreateShareRequest:
       required:
         - achievedOn
@@ -1173,11 +1341,13 @@ components:
       scheme: bearer
       bearerFormat: JWT
 tags:
+  - name: Areas
+    description: Areas of the catalogue. Areas outside the preloaded regions are filled from OpenStreetMap on request.
   - name: Auth
     description: Accounts used only to own achievement shares.
   - name: Feedback
     description: 'Anonymous, opt-in feedback on recommendations and its aggregate statistics.'
   - name: Places
-    description: Read-only place catalogue built from Overture Places.
+    description: 'Read-only place catalogue built from Overture Places and, for areas loaded on request, OpenStreetMap.'
   - name: Shares
     description: Public achievement links.

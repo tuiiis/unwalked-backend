@@ -4,6 +4,7 @@ using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using Npgsql;
 using Unwalked.Application.Abstractions;
+using Unwalked.Infrastructure.Areas;
 using Unwalked.Infrastructure.Persistence;
 using Unwalked.Infrastructure.Persistence.Repositories;
 using Unwalked.Infrastructure.Security;
@@ -38,8 +39,18 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddHttpClient<IAreaPlaceSource, OverpassPlaceSource>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["Areas:OverpassUrl"] ?? "https://overpass-api.de/api/interpreter");
+            client.Timeout = TimeSpan.FromMinutes(3);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Unwalked/0.2 (student diploma project)");
+        });
+
         return services
             .AddSingleton<IClock, SystemClock>()
+            .AddSingleton<BackgroundAreaLoader>()
+            .AddSingleton<IAreaLoader>(provider => provider.GetRequiredService<BackgroundAreaLoader>())
+            .AddScoped<IAreaRepository, AreaRepository>()
             .AddSingleton<IPasswordHasher, AspNetPasswordHasher>()
             .AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>()
             .AddScoped<IPlaceReadRepository, PlaceReadRepository>()

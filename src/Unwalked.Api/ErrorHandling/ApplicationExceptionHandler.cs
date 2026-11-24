@@ -27,6 +27,7 @@ public sealed class ApplicationExceptionHandler(IProblemDetailsService problemDe
             NotFoundException => Problem(StatusCodes.Status404NotFound, "Resource not found.", exception.Message),
             ConflictException => Problem(StatusCodes.Status409Conflict, "Conflict.", exception.Message),
             AuthenticationFailedException => Problem(StatusCodes.Status401Unauthorized, "Authentication failed.", exception.Message),
+            TooManyRequestsException => Problem(StatusCodes.Status429TooManyRequests, "Too many requests.", exception.Message),
             OperationCanceledException when httpContext.RequestAborted.IsCancellationRequested =>
                 Problem(StatusCodes.Status499ClientClosedRequest, "Request cancelled.", null),
             _ => Problem(StatusCodes.Status500InternalServerError, "An unexpected error occurred.", null),
@@ -42,6 +43,11 @@ public sealed class ApplicationExceptionHandler(IProblemDetailsService problemDe
         }
 
         httpContext.Response.StatusCode = problem.Status!.Value;
+        if (exception is TooManyRequestsException limited)
+        {
+            httpContext.Response.Headers.RetryAfter = ((int)Math.Ceiling(limited.RetryAfter.TotalSeconds)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         return await problemDetails.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,

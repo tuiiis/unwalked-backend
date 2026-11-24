@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Unwalked.Application.Areas;
 using Unwalked.Application.Auth;
 using Unwalked.Application.Feedback;
 using Unwalked.Application.Places;
@@ -17,6 +18,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services) =>
         services
             .AddScoped<PlaceQueryService>()
+            .AddScoped<AreaService>()
             .AddScoped<AuthService>()
             .AddScoped<ShareService>()
             .AddScoped<FeedbackService>();

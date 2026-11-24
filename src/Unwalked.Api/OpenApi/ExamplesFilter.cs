@@ -88,6 +88,26 @@ internal sealed class ExamplesFilter : IOperationFilter
                 ],
                 ["400"] = [new("invalidCell", "A string that is not an H3 index", """{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","title":"One or more validation errors occurred.","status":400,"errors":{"cells":["'abc' is not an H3 cell."]},"traceId":"0HNQ6B3DSL1FC:00000001"}""")],
             }),
+        ["getArea"] = new(
+            Requests: [],
+            Responses: new()
+            {
+                ["200"] =
+                [
+                    new("ready", "Kaunas after it was loaded", """{"cell":"851f40d3fffffff","status":"Ready","region":"area-851f40d3fffffff"}"""),
+                    new("loading", "Kaunas while it loads", """{"cell":"851f40d3fffffff","status":"Loading"}"""),
+                    new("missing", "Riga, never requested", """{"cell":"851f6077fffffff","status":"Missing"}"""),
+                ],
+                ["400"] = [new("wrongResolution", "A resolution 11 cell", """{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","title":"One or more validation errors occurred.","status":400,"errors":{"cell":["An area is an H3 cell of resolution 5."]},"traceId":"0HNQ6B3DSL1FG:00000001"}""")],
+            }),
+        ["ensureArea"] = new(
+            Requests: [],
+            Responses: new()
+            {
+                ["200"] = [new("preloaded", "Vilnius, covered by a preloaded region", """{"cell":"851f4033fffffff","status":"Ready","region":"vilnius"}""")],
+                ["202"] = [new("started", "Kaunas, loading started", """{"cell":"851f40d3fffffff","status":"Loading"}""")],
+                ["429"] = [new("failedRecently", "The last load failed less than 10 minutes ago", """{"type":"https://tools.ietf.org/html/rfc6585#section-4","title":"Too many requests.","status":429,"detail":"Loading this area failed a moment ago. Try again later.","traceId":"0HNQ6B3DSL1FH:00000001"}""")],
+            }),
         ["submitFeedback"] = new(
             Requests:
             [

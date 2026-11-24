@@ -24,8 +24,8 @@ public static class SwaggerSetup
             options.SwaggerDoc(DocumentName, new OpenApiInfo
             {
                 Title = "Places and sharing API",
-                Version = "1.0.0",
-                Description = "Place catalogue queries, achievement share links and anonymous recommendation feedback for the mobile app.",
+                Version = "1.1.0",
+                Description = "Place catalogue queries, catalogue areas, achievement share links and anonymous recommendation feedback for the mobile app.",
                 Contact = new OpenApiContact { Name = "Tatsiana Halaburda", Url = new Uri("https://ehu.lt") },
                 License = new OpenApiLicense { Name = "MIT", Url = new Uri("https://opensource.org/licenses/MIT") },
             });
@@ -122,9 +122,10 @@ public static class SwaggerSetup
     {
         private static readonly Dictionary<string, string> Descriptions = new()
         {
+            ["Areas"] = "Areas of the catalogue. Areas outside the preloaded regions are filled from OpenStreetMap on request.",
             ["Auth"] = "Accounts used only to own achievement shares.",
             ["Feedback"] = "Anonymous, opt-in feedback on recommendations and its aggregate statistics.",
-            ["Places"] = "Read-only place catalogue built from Overture Places.",
+            ["Places"] = "Read-only place catalogue built from Overture Places and, for areas loaded on request, OpenStreetMap.",
             ["Shares"] = "Public achievement links.",
         };
 

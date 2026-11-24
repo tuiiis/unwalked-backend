@@ -335,3 +335,11 @@ VALUES ('20261114133324_BuildingsAndOpeningHours', '10.0.13');
 
 COMMIT;
 
+START TRANSACTION;
+GRANT INSERT ON region, place TO app_write;
+
+INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+VALUES ('20261124190000_AreaLoading', '10.0.13');
+
+COMMIT;
+
