@@ -20,8 +20,9 @@ if (builder.Configuration["PORT"] is { Length: > 0 } port)
     builder.WebHost.UseUrls($"http://*:{port}");
 }
 
-builder.Host.UseSerilog((context, configuration) => configuration
+builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
     .Enrich.FromLogContext()
     .WriteTo.Console(new RenderedCompactJsonFormatter()));
 
@@ -71,9 +72,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
-app.UseSerilogRequestLogging();
 app.UseSwagger(options => options.RouteTemplate = "openapi/{documentName}.{extension:regex(^(json|yaml)$)}");
 app.UseSwaggerUI(options => options.SwaggerEndpoint($"/openapi/{SwaggerSetup.DocumentName}.json", "v1"));
 app.UseAuthentication();
