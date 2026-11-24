@@ -1,6 +1,6 @@
 # Unwalked: back-end
 
-Back-end for the bachelor thesis "Mobile Application for Recommending New Places and Walking Routes Based on the Analysis of the User's Habitual Geography". Client: [unwalked-android](https://github.com/tuiiis/unwalked-android). Business analysis: [unwalked-thesis](https://github.com/tuiiis/unwalked-thesis).
+Back-end for the bachelor thesis "Mobile Application for Recommending New Places and Walking Routes Based on the Analysis of the User's Habitual Geography". Client: [unwalked-android](https://github.com/tuiiis/unwalked-android).
 
 ASP.NET Core 10, PostgreSQL 17 with PostGIS 3.5, EF Core. The API serves a place catalogue, accounts for achievement shares and anonymous feedback on recommendations. The catalogue starts with Vilnius from Overture Places, and areas elsewhere are loaded from OpenStreetMap when a client asks for them.
 
