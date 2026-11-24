@@ -2,7 +2,7 @@
 
 Back-end for the bachelor thesis "Mobile Application for Recommending New Places and Walking Routes Based on the Analysis of the User's Habitual Geography". Documentation and business analysis: [unwalked-thesis](https://github.com/tuiiis/unwalked-thesis).
 
-ASP.NET Core 10 with PostgreSQL 17 and PostGIS 3.5. Hosting: a Docker web service on Render and managed PostgreSQL on Neon, both in the EU (Frankfurt). A public instance runs at https://unwalked-api.onrender.com with Swagger UI at https://unwalked-api.onrender.com/swagger. [Deployment](docs/deployment.md) explains how to set them up.
+ASP.NET Core 10 with PostgreSQL 17 and PostGIS 3.5. Hosting: a Docker container on Heroku in the EU and managed PostgreSQL on Neon in Frankfurt. A public instance runs at https://unwalked-api-7820623db8c8.herokuapp.com with Swagger UI at https://unwalked-api-7820623db8c8.herokuapp.com/swagger. [Deployment](docs/deployment.md) explains how to set them up.
 
 ## API documentation
 
@@ -106,7 +106,7 @@ The tools read the connection string from `ConnectionStrings__Unwalked`.
 
 ## Continuous integration
 
-GitHub Actions runs [ci.yml](.github/workflows/ci.yml) on every push and pull request. Render deploys a commit to production only after all four jobs pass.
+GitHub Actions runs [ci.yml](.github/workflows/ci.yml) on every push and pull request. Heroku deploys a commit to production only after all four jobs pass.
 
 | Job | What it checks |
 |---|---|

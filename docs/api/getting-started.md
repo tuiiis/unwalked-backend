@@ -2,7 +2,7 @@
 
 This guide takes you from a fresh clone to a first authenticated request. It takes about five minutes if Docker is already installed.
 
-A public instance runs at https://unwalked-api.onrender.com with the Vilnius catalogue and the test accounts loaded. To use it, replace `http://localhost:18080` in the examples below with that address and skip the first step. It sleeps after 15 minutes without traffic, so the first request after a pause can take about a minute.
+A public instance runs at https://unwalked-api-7820623db8c8.herokuapp.com with the Vilnius catalogue and the test accounts loaded. To use it, replace `http://localhost:18080` in the examples below with that address and skip the first step.
 
 ## 1. Start the API
 
