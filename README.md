@@ -76,9 +76,9 @@ Passwords come from `.env`, which is never committed.
 dotnet test
 ```
 
-Requires the .NET SDK from `global.json` and Docker for Testcontainers. 150 unit tests and 54 integration tests. The integration tests apply the migrations to a real PostGIS and check the API together with constraints, the trigger, the procedure, the views and role permissions.
+Requires the .NET SDK from `global.json` and Docker for Testcontainers. 153 unit tests and 57 integration tests. The integration tests apply the migrations to a real PostGIS and check the API together with constraints, the trigger, the procedure, the views and role permissions.
 
-Coverage on 24.11.2026 is 97.9% of lines and 92.9% of branches. Unit tests alone cover the business logic: Domain 95.7%, Application 96.3%. To build the report:
+Coverage on 28.11.2026 is 98.8% of lines and 94.6% of branches. Unit tests alone cover the business logic: Domain 95.9%, Application 95.3%. To build the report:
 
 ```bash
 dotnet test --settings coverage.runsettings --collect "XPlat Code Coverage" --results-directory TestResults
@@ -92,10 +92,10 @@ dotnet reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetd
 
 | Job | What it checks |
 |---|---|
-| Tests and coverage | Unit and integration tests, fails below 80% line coverage |
+| Tests and coverage | Build with the .NET code analysers at `latest-recommended`, any warning fails it. Unit and integration tests, fails below 80% line coverage |
 | Vulnerable packages | Any NuGet package with a known vulnerability, including transitive ones |
 | OpenAPI lint | The specification with Spectral and Redocly |
-| Docker image | The production image builds |
+| Docker image | The production image builds. On `main` it is pushed to `ghcr.io/tuiiis/unwalked-backend` |
 
 ## Where the Back-end criterion is implemented
 
@@ -108,6 +108,8 @@ dotnet reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetd
 | Structured logging | Serilog with compact JSON in `Api/Program.cs` |
 | Authentication and passwords | JWT bearer tokens in `Infrastructure/Security`, PBKDF2 hashing through ASP.NET Identity |
 | Validation and status codes | Domain rules raise validation errors, mapped to 400, 401, 404, 409 and 429 |
+| Account deletion | `DELETE /api/v1/account` removes the account and its shares, the server half of GDPR erasure |
+| Caching | Output cache on the GET place searches, dropped when an area finishes loading |
 | Secrets | Environment variables and Heroku config vars only, `.env` is git-ignored |
 | Production deployment | Heroku and Neon, [docs/deployment.md](docs/deployment.md) |
 | Tests and coverage | [Tests](#tests) |
