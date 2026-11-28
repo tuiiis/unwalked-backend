@@ -75,7 +75,7 @@ public sealed class PlaceCsvParser
         return columns;
     }
 
-    private static PlaceImportRecord? TryCreate(IReadOnlyList<string> row, IReadOnlyDictionary<string, int> columns)
+    private static PlaceImportRecord? TryCreate(IReadOnlyList<string> row, Dictionary<string, int> columns)
     {
         if (row.Count < columns.Count)
         {

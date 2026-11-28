@@ -91,10 +91,10 @@ public sealed class PlaceBulkLoader(NpgsqlDataSource dataSource, GeometryFactory
 
     private async Task CopyPlacesAsync(
         NpgsqlConnection connection,
-        IReadOnlyList<PlaceImportRecord> records,
+        List<PlaceImportRecord> records,
         long firstId,
         int regionId,
-        IReadOnlyDictionary<string, int> categoryIds,
+        Dictionary<string, int> categoryIds,
         CancellationToken cancellationToken)
     {
         await using var writer = await connection.BeginBinaryImportAsync(
@@ -121,9 +121,9 @@ public sealed class PlaceBulkLoader(NpgsqlDataSource dataSource, GeometryFactory
 
     private static async Task<int> CopyAlternateCategoriesAsync(
         NpgsqlConnection connection,
-        IReadOnlyList<PlaceImportRecord> records,
+        List<PlaceImportRecord> records,
         long firstId,
-        IReadOnlyDictionary<string, int> categoryIds,
+        Dictionary<string, int> categoryIds,
         CancellationToken cancellationToken)
     {
         var links = 0;

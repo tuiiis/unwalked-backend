@@ -1,0 +1,11 @@
+root = true
+
+[*.cs]
+dotnet_diagnostic.CA1716.severity = none
+
+[src/Unwalked.Infrastructure/Persistence/Migrations/*.cs]
+generated_code = true
+
+[tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1861.severity = none

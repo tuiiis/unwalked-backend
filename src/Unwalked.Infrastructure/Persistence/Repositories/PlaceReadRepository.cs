@@ -66,7 +66,7 @@ public sealed class PlaceReadRepository(UnwalkedDbContext db, GeometryFactory ge
         return rows.ConvertAll(row => row.ToSummary());
     }
 
-    private IQueryable<Place> FilterByCategory(IQueryable<Place> places, string? category)
+    private static IQueryable<Place> FilterByCategory(IQueryable<Place> places, string? category)
     {
         places = places.AsNoTracking();
         return category is null

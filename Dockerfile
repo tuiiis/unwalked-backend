@@ -3,7 +3,7 @@ ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled
 
 FROM ${SDK_IMAGE} AS build
 WORKDIR /source
-COPY global.json Directory.Build.props Directory.Packages.props ./
+COPY .editorconfig global.json Directory.Build.props Directory.Packages.props ./
 COPY src/Unwalked.Domain/Unwalked.Domain.csproj src/Unwalked.Domain/
 COPY src/Unwalked.Application/Unwalked.Application.csproj src/Unwalked.Application/
 COPY src/Unwalked.Infrastructure/Unwalked.Infrastructure.csproj src/Unwalked.Infrastructure/

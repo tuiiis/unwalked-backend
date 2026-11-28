@@ -8,7 +8,7 @@ namespace Unwalked.Api.ErrorHandling;
 /// <summary>
 /// Turns exceptions from the application and domain layers into Problem Details responses with the matching status code. Unexpected errors are logged and answer 500 without internal details.
 /// </summary>
-public sealed class ApplicationExceptionHandler(IProblemDetailsService problemDetails, ILogger<ApplicationExceptionHandler> logger)
+public sealed partial class ApplicationExceptionHandler(IProblemDetailsService problemDetails, ILogger<ApplicationExceptionHandler> logger)
     : IExceptionHandler
 {
     /// <summary>
@@ -35,11 +35,11 @@ public sealed class ApplicationExceptionHandler(IProblemDetailsService problemDe
 
         if (problem.Status == StatusCodes.Status500InternalServerError)
         {
-            logger.LogError(exception, "Unhandled exception for {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+            LogUnhandled(logger, exception, httpContext.Request.Method, httpContext.Request.Path);
         }
         else
         {
-            logger.LogInformation("Request rejected with {StatusCode}: {Reason}", problem.Status, exception.Message);
+            LogRejected(logger, problem.Status, exception);
         }
 
         httpContext.Response.StatusCode = problem.Status!.Value;
@@ -55,6 +55,20 @@ public sealed class ApplicationExceptionHandler(IProblemDetailsService problemDe
             Exception = exception,
         });
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Unhandled exception for {Method} {Path}")]
+    private static partial void LogUnhandled(ILogger logger, Exception exception, string method, PathString path);
+
+    private static void LogRejected(ILogger logger, int? statusCode, Exception exception)
+    {
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            LogRejectedCore(logger, statusCode, exception.Message);
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Request rejected with {StatusCode}: {Reason}")]
+    private static partial void LogRejectedCore(ILogger logger, int? statusCode, string reason);
 
     private static ProblemDetails Problem(int status, string title, string? detail) =>
         new() { Status = status, Title = title, Detail = detail };
