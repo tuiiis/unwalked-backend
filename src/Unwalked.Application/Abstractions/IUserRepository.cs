@@ -16,4 +16,9 @@ public interface IUserRepository
     /// Stores the account. Returns false when the email is already taken.
     /// </summary>
     Task<bool> TryAddAsync(UserAccount user, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Deletes the account and, through the database, its shares. Returns false when it no longer exists.
+    /// </summary>
+    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken);
 }

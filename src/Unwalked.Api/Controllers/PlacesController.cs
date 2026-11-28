@@ -1,13 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.OutputCaching;
 using Swashbuckle.AspNetCore.Annotations;
+using Unwalked.Api.Caching;
 using Unwalked.Api.Contracts;
 using Unwalked.Application.Places;
 
 namespace Unwalked.Api.Controllers;
 
 /// <summary>
-/// Read-only search in the place catalogue by radius, bounding box or H3 cells.
+/// Read-only search in the place catalogue by radius, bounding box or H3 cells. The two GET searches are cached for ten minutes.
 /// </summary>
 [ApiController]
 [Route("api/v1/places")]
@@ -15,6 +17,7 @@ namespace Unwalked.Api.Controllers;
 public sealed class PlacesController(PlaceQueryService places) : ControllerBase
 {
     [HttpGet("near")]
+    [OutputCache(PolicyName = PlaceOutputCache.Policy)]
     [SwaggerOperation(OperationId = "findPlacesNear", Summary = "Places within a radius of a point, nearest first.", Description = "Distance is geodesic in metres. A category matches either the primary or an alternate category of a place.")]
     [ProducesResponseType<IReadOnlyList<PlaceResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -31,6 +34,7 @@ public sealed class PlacesController(PlaceQueryService places) : ControllerBase
     }
 
     [HttpGet("in-bbox")]
+    [OutputCache(PolicyName = PlaceOutputCache.Policy)]
     [SwaggerOperation(OperationId = "findPlacesInBoundingBox", Summary = "Places inside a bounding box, most confident first.", Description = "The box may cover at most 0.25 square degrees, for example 0.5 by 0.5 degrees, about 55 by 32 km around Vilnius.")]
     [ProducesResponseType<IReadOnlyList<PlaceResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]

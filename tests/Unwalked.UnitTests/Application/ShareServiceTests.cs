@@ -37,6 +37,20 @@ public class ShareServiceTests
         });
     }
 
+    [Test]
+    public void Create_RejectsTokenOfDeletedAccount()
+    {
+        shares.DeletedOwners.Add(Owner);
+
+        var error = Assert.ThrowsAsync<AuthenticationFailedException>(() => service.CreateAsync(Owner, ValidCommand("50 new cells"), CancellationToken.None));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(error!.Message, Is.EqualTo("The account behind this token has been deleted."));
+            Assert.That(shares.Shares, Is.Empty);
+        });
+    }
+
     [TestCase("")]
     [TestCase("   ")]
     public void Create_RejectsBlankName(string name)

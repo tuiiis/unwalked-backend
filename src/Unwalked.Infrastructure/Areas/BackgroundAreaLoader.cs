@@ -10,7 +10,7 @@ namespace Unwalked.Infrastructure.Areas;
 /// <summary>
 /// Loads areas on background tasks inside the API process. A cell is loaded at most once at a time, failures are remembered so the service can ask clients to wait.
 /// </summary>
-public sealed class BackgroundAreaLoader(IServiceScopeFactory scopes, IClock clock, IHostApplicationLifetime lifetime, ILogger<BackgroundAreaLoader> logger)
+public sealed partial class BackgroundAreaLoader(IServiceScopeFactory scopes, IClock clock, IHostApplicationLifetime lifetime, ILogger<BackgroundAreaLoader> logger)
     : IAreaLoader
 {
     private readonly ConcurrentDictionary<ulong, Task> running = new();
@@ -71,16 +71,23 @@ public sealed class BackgroundAreaLoader(IServiceScopeFactory scopes, IClock clo
             var places = await scope.ServiceProvider.GetRequiredService<IAreaPlaceSource>().FetchAsync(cell, lifetime.ApplicationStopping);
             var region = await scope.ServiceProvider.GetRequiredService<IAreaRepository>().SaveAsync(cell, places, lifetime.ApplicationStopping);
             failures.TryRemove((ulong)cell, out _);
-            logger.LogInformation("Loaded area {Cell} as {Region} with {Places} places", cell.ToString(), region, places.Count);
+            await (scope.ServiceProvider.GetService<IPlaceCache>()?.EvictAsync(lifetime.ApplicationStopping) ?? Task.CompletedTask);
+            LogLoaded(logger, cell, region, places.Count);
         }
         catch (Exception exception)
         {
             failures[(ulong)cell] = clock.UtcNow;
-            logger.LogWarning(exception, "Loading area {Cell} failed", cell.ToString());
+            LogFailed(logger, exception, cell);
         }
         finally
         {
             running.TryRemove((ulong)cell, out _);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loaded area {Cell} as {Region} with {Places} places")]
+    private static partial void LogLoaded(ILogger logger, H3Index cell, string region, int places);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Loading area {Cell} failed")]
+    private static partial void LogFailed(ILogger logger, Exception exception, H3Index cell);
 }

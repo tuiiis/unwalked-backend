@@ -5,7 +5,7 @@ using Unwalked.Domain.Users;
 namespace Unwalked.Application.Auth;
 
 /// <summary>
-/// Registration and sign-in use cases.
+/// Registration, sign-in and account deletion use cases.
 /// </summary>
 public sealed class AuthService(
     IUserRepository users,
@@ -50,4 +50,10 @@ public sealed class AuthService(
 
         return tokenIssuer.Issue(user);
     }
+
+    /// <summary>
+    /// Deletes the caller's account together with its shares. Repeating it after the account is gone does nothing.
+    /// </summary>
+    public Task DeleteAccountAsync(Guid userId, CancellationToken cancellationToken) =>
+        users.DeleteAsync(userId, cancellationToken);
 }

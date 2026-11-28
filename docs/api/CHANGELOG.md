@@ -2,6 +2,18 @@
 
 All notable changes to the API are listed here. The format follows Keep a Changelog and versions follow semantic versioning.
 
+## [1.2.0] - 2026-11-28
+
+### Added
+
+- Account: `DELETE /account` deletes the caller's account and every share it published
+- `Age` header on cached place searches
+
+### Changed
+
+- `GET /places/near` and `GET /places/in-bbox` are cached for 10 minutes, and the cache is dropped when an area finishes loading
+- Publishing a share with a token of a deleted account answers `401` instead of failing on the database
+
 ## [1.1.0] - 2026-11-24
 
 ### Added

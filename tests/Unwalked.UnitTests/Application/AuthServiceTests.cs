@@ -80,4 +80,25 @@ public class AuthServiceTests
 
         Assert.That(error!.Message, Is.EqualTo("Email or password is incorrect."));
     }
+
+    [Test]
+    public async Task DeleteAccount_RemovesOnlyTheCallersAccount()
+    {
+        var walker = await service.RegisterAsync("walker@example.lt", Password, CancellationToken.None);
+        await service.RegisterAsync("other@example.lt", Password, CancellationToken.None);
+
+        await service.DeleteAccountAsync(walker, CancellationToken.None);
+
+        Assert.That(users.Users.Keys, Is.EquivalentTo(new[] { "other@example.lt" }));
+        Assert.ThrowsAsync<AuthenticationFailedException>(() => service.LoginAsync("walker@example.lt", Password, CancellationToken.None));
+    }
+
+    [Test]
+    public async Task DeleteAccount_RepeatedForMissingAccountDoesNothing()
+    {
+        var walker = await service.RegisterAsync("walker@example.lt", Password, CancellationToken.None);
+        await service.DeleteAccountAsync(walker, CancellationToken.None);
+
+        Assert.DoesNotThrowAsync(() => service.DeleteAccountAsync(walker, CancellationToken.None));
+    }
 }

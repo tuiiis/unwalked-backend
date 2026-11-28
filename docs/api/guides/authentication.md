@@ -1,6 +1,6 @@
 # Authentication
 
-Most of the API is anonymous. Only creating and deleting achievement shares needs an account, because a share must have an owner who can remove it later.
+Most of the API is anonymous. Only creating and deleting achievement shares, and deleting the account itself, need an account, because a share must have an owner who can remove it later.
 
 | Operation | Token needed |
 |---|---|
@@ -8,6 +8,7 @@ Most of the API is anonymous. Only creating and deleting achievement shares need
 | All `places` operations | No |
 | `POST /api/v1/feedback`, `GET /api/v1/feedback/stats` | No, feedback is anonymous by design |
 | `POST /api/v1/shares`, `DELETE /api/v1/shares/{id}` | Yes |
+| `DELETE /api/v1/account` | Yes |
 | `GET /api/v1/shares/{id}`, `GET /api/v1/shares/{id}/image` | No, share links are public |
 
 ## Accounts
@@ -15,6 +16,8 @@ Most of the API is anonymous. Only creating and deleting achievement shares need
 `POST /api/v1/auth/register` creates an account from an email and a password. The email is trimmed and lower-cased, so `Ona@Example.test ` and `ona@example.test` are the same account. The password must be 10 to 128 characters and not blank. It is stored as a salted PBKDF2 hash (ASP.NET Core Identity format) and never logged.
 
 Registering an email that already exists answers `409 Conflict`.
+
+`DELETE /api/v1/account` deletes the caller's account and every share it published, so their public links stop working at once. It answers `204` and stays `204` if repeated. This is the server half of the right to erasure. The location history never reaches the server and is deleted on the phone.
 
 ## Tokens
 
@@ -42,6 +45,7 @@ The server accepts up to 30 seconds of clock difference. There is no refresh tok
 | Wrong email or wrong password | 401 | `"detail": "Email or password is incorrect."` |
 | Missing, malformed, expired or wrongly signed token | 401 | `"title": "Unauthorized"`, plus a `WWW-Authenticate: Bearer` header |
 | Valid token, but the share belongs to someone else | 404 | The same body as a share that does not exist |
+| Token issued before the account was deleted, used to publish a share | 401 | `"detail": "The account behind this token has been deleted."` |
 
 Wrong email and wrong password give the same answer on purpose, so nobody can find out which emails are registered. For the same reason another person's share answers 404, not 403.
 

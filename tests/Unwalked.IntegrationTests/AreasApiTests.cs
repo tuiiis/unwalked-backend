@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using H3;
@@ -46,6 +47,8 @@ public class AreasApiTests
         await using var factory = new FactoryWith(new FixedSource());
         using var client = factory.CreateClient();
         var cell = AreaCell.ForCoordinate(KaunasCentre);
+        var near = string.Create(CultureInfo.InvariantCulture, $"/api/v1/places/near?lat={KaunasCentre.Latitude}&lon={KaunasCentre.Longitude}&radius=100");
+        var nearBefore = await client.GetFromJsonAsync<List<PlaceBody>>(near);
 
         var started = await client.PutAsync($"/api/v1/areas/{cell}", null);
         await factory.Services.GetRequiredService<BackgroundAreaLoader>().WaitAsync(cell);
@@ -53,6 +56,7 @@ public class AreasApiTests
         var again = await client.PutAsync($"/api/v1/areas/{cell}", null);
         var places = await client.PostAsJsonAsync("/api/v1/places/by-cells", new { cells = new[] { H3Cell.Format(H3Cell.ForCoordinate(KaunasCentre)) } });
         var found = await places.Content.ReadFromJsonAsync<List<PlaceBody>>();
+        var nearAfter = await client.GetFromJsonAsync<List<PlaceBody>>(near);
 
         Assert.Multiple(() =>
         {
@@ -61,6 +65,8 @@ public class AreasApiTests
             Assert.That(state.Region, Is.EqualTo($"area-{cell}"));
             Assert.That(again.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(found!.Select(place => place.ExternalId), Is.EqualTo(new[] { "osm:node/1" }));
+            Assert.That(nearBefore, Is.Empty);
+            Assert.That(nearAfter!.Select(place => place.ExternalId), Is.EqualTo(new[] { "osm:node/1" }));
         });
     }
 

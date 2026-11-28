@@ -15,6 +15,12 @@ Base path: `/api/v1`. All bodies are JSON in UTF-8. Errors are `application/prob
 | POST | `/auth/register` | `register` | 201 `RegisterResponse` | 400, 409 |
 | POST | `/auth/login` | `login` | 200 `LoginResponse` | 400, 401 |
 
+## Account
+
+| Method | Path | Operation | Auth | Success | Errors |
+|---|---|---|---|---|---|
+| DELETE | `/account` | `deleteAccount` | Bearer | 204 | 401 |
+
 ## Places
 
 | Method | Path | Operation | Success | Errors |

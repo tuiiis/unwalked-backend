@@ -5,14 +5,23 @@ using Unwalked.Domain.Sharing;
 namespace Unwalked.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// EF Core implementation of share storage.
+/// EF Core implementation of share storage. A share for a deleted owner is caught by the foreign key.
 /// </summary>
 public sealed class ShareRepository(UnwalkedDbContext db) : IShareRepository
 {
-    public async Task AddAsync(AchievementShare share, CancellationToken cancellationToken)
+    public async Task<bool> TryAddAsync(AchievementShare share, CancellationToken cancellationToken)
     {
         db.Shares.Add(share);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException exception) when (PostgresErrors.IsForeignKeyViolation(exception))
+        {
+            db.Entry(share).State = EntityState.Detached;
+            return false;
+        }
     }
 
     public Task<AchievementShare?> FindAsync(Guid id, CancellationToken cancellationToken) =>

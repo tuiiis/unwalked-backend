@@ -6,9 +6,11 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Serilog;
 using Serilog.Formatting.Compact;
+using Unwalked.Api.Caching;
 using Unwalked.Api.ErrorHandling;
 using Unwalked.Api.OpenApi;
 using Unwalked.Application;
+using Unwalked.Application.Abstractions;
 using Unwalked.Infrastructure;
 using Unwalked.Infrastructure.Persistence;
 using Unwalked.Infrastructure.Security;
@@ -29,6 +31,11 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration);
+
+builder.Services.AddOutputCache(options => options.AddPolicy(
+    PlaceOutputCache.Policy,
+    policy => policy.Expire(PlaceOutputCache.Lifetime).SetVaryByQuery("*").Tag(PlaceOutputCache.Policy)));
+builder.Services.AddSingleton<IPlaceCache, PlaceOutputCache>();
 
 builder.Services
     .AddControllers()
@@ -79,6 +86,7 @@ app.UseSwagger(options => options.RouteTemplate = "openapi/{documentName}.{exten
 app.UseSwaggerUI(options => options.SwaggerEndpoint($"/openapi/{SwaggerSetup.DocumentName}.json", "v1"));
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseOutputCache();
 app.MapControllers();
 app.MapHealthChecks("/health");
 

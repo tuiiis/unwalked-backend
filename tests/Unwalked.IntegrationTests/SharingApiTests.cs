@@ -74,6 +74,35 @@ public class SharingApiTests : ApiTestBase
     }
 
     [Test]
+    public async Task DeleteAccount_RemovesSharesAndRetiresTheToken()
+    {
+        var owner = await RegisterAndLoginAsync();
+        var created = await Client.SendAsync(Authorized(HttpMethod.Post, "/api/v1/shares", owner, ShareBody()));
+        var id = (await ReadJsonAsync(created))["id"]!.GetValue<string>();
+
+        var deleted = await Client.SendAsync(Authorized(HttpMethod.Delete, "/api/v1/account", owner));
+        var repeated = await Client.SendAsync(Authorized(HttpMethod.Delete, "/api/v1/account", owner));
+        var shareAfter = await Client.GetAsync($"/api/v1/shares/{id}");
+        var staleCreate = await Client.SendAsync(Authorized(HttpMethod.Post, "/api/v1/shares", owner, ShareBody()));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(deleted.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+            Assert.That(repeated.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+            Assert.That(shareAfter.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+            Assert.That(staleCreate.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        });
+    }
+
+    [Test]
+    public async Task DeleteAccount_RequiresToken()
+    {
+        var response = await Client.DeleteAsync("/api/v1/account");
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    [Test]
     public async Task CreateShare_RejectsImageNotMatchingContentType()
     {
         var token = await RegisterAndLoginAsync();

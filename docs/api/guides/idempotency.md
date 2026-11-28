@@ -21,6 +21,7 @@ The server compares only `eventId`. A repeat with a different action is still a 
 |---|---|
 | All `GET` requests | Yes |
 | `DELETE /shares/{id}` | Yes. A second delete answers 404, which the client should treat as done |
+| `DELETE /account` | Yes. A second delete answers 204 again |
 | `POST /auth/register` | Yes. A repeat answers 409, then sign in |
 | `POST /auth/login` | Yes. Each call returns a new token |
 | `POST /shares` | No. Each call creates a new link. Wait for the response before retrying |

@@ -41,7 +41,11 @@ public sealed class ShareService(IShareRepository shares, IClock clock)
             CreatedAt = now,
         };
 
-        await shares.AddAsync(share, cancellationToken);
+        if (!await shares.TryAddAsync(share, cancellationToken))
+        {
+            throw new AuthenticationFailedException("The account behind this token has been deleted.");
+        }
+
         return ToDetails(share);
     }
 

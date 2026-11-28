@@ -28,6 +28,10 @@ If you get exactly `limit` results there may be more. Zoom in, shrink the radius
 
 Cells of resolution 7 to 11 are accepted. Each one is expanded to its resolution 11 children, so one resolution 7 cell already counts as 2,401 cells and nine of them go over the limit.
 
+## Caching
+
+`GET /places/near` and `GET /places/in-bbox` are cached on the server for 10 minutes per exact query string. A cached answer carries an `Age` header with its age in seconds. When an area finishes loading the cache is dropped, so newly loaded places show up at once. `POST /places/by-cells`, which the app uses, is not cached.
+
 ## Rate limits
 
 Most operations have no rate limiting. The API serves a single mobile app during a thesis study.

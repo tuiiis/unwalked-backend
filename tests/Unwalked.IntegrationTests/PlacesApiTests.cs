@@ -26,6 +26,22 @@ public class PlacesApiTests : ApiTestBase
     }
 
     [Test]
+    public async Task Near_RepeatedSearchIsServedFromCache()
+    {
+        var url = $"/api/v1/places/near?{Cathedral}&radius=400&limit=3";
+
+        var first = await Client.GetAsync(url);
+        var second = await Client.GetAsync(url);
+
+        Assert.Multiple(async () =>
+        {
+            Assert.That(first.Headers.Age, Is.Null);
+            Assert.That(second.Headers.Age, Is.Not.Null);
+            Assert.That(await second.Content.ReadAsStringAsync(), Is.EqualTo(await first.Content.ReadAsStringAsync()));
+        });
+    }
+
+    [Test]
     public async Task Near_MatchesCategoryOnPrimaryOrAlternate()
     {
         var places = await GetPlacesAsync($"/api/v1/places/near?{Cathedral}&radius=3000&category=CAFE");

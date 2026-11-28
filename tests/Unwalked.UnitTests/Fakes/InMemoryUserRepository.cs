@@ -12,4 +12,10 @@ public sealed class InMemoryUserRepository : IUserRepository
 
     public Task<bool> TryAddAsync(UserAccount user, CancellationToken cancellationToken) =>
         Task.FromResult(Users.TryAdd(user.Email, user));
+
+    public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var user = Users.Values.SingleOrDefault(candidate => candidate.Id == id);
+        return Task.FromResult(user is not null && Users.Remove(user.Email));
+    }
 }

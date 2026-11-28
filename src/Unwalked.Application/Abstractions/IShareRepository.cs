@@ -8,9 +8,9 @@ namespace Unwalked.Application.Abstractions;
 public interface IShareRepository
 {
     /// <summary>
-    /// Stores a new share.
+    /// Stores a new share. Returns false when the owner account no longer exists.
     /// </summary>
-    Task AddAsync(AchievementShare share, CancellationToken cancellationToken);
+    Task<bool> TryAddAsync(AchievementShare share, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns the share with this id, or null.

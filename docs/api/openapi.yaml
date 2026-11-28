@@ -8,11 +8,51 @@ info:
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
-  version: '1.1.0'
+  version: '1.2.0'
 servers:
   - url: /
     description: The host that serves this document
 paths:
+  /api/v1/account:
+    delete:
+      tags:
+        - Account
+      summary: Deletes the caller's account and every share it published.
+      description: Requires a bearer token. Shared links stop working at once. Repeating the call after the account is gone still answers 204. Tokens issued before deletion can no longer publish shares.
+      operationId: deleteAccount
+      responses:
+        '204':
+          description: No Content
+        '401':
+          description: 'The bearer token is missing or invalid, or the credentials are wrong.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                noToken:
+                  summary: No Authorization header
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.2
+                    title: Unauthorized
+                    status: 401
+                    traceId: 0HNQ6B3DSL1FB:00000001
+        '500':
+          description: Unexpected server error. The body carries a traceId to quote in bug reports.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unexpected:
+                  summary: 'An unhandled failure, quote the traceId'
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.6.1
+                    title: An unexpected error occurred.
+                    status: 500
+                    traceId: 0HNQ6B3DSL1FA:00000001
+      security:
+        - bearer: [ ]
   '/api/v1/areas/{cell}':
     get:
       tags:
@@ -853,6 +893,14 @@ paths:
                     title: Unauthorized
                     status: 401
                     traceId: 0HNQ6B3DSL1FB:00000001
+                deletedAccount:
+                  summary: The token belongs to an account deleted since it was issued
+                  value:
+                    type: https://tools.ietf.org/html/rfc9110#section-15.5.2
+                    title: Authentication failed.
+                    status: 401
+                    detail: The account behind this token has been deleted.
+                    traceId: 0HNQ6B3DSL1FG:00000001
         '500':
           description: Unexpected server error. The body carries a traceId to quote in bug reports.
           content:
@@ -1341,6 +1389,8 @@ components:
       scheme: bearer
       bearerFormat: JWT
 tags:
+  - name: Account
+    description: The caller's own account. Deleting it removes the account and its shares from the server.
   - name: Areas
     description: Areas of the catalogue. Areas outside the preloaded regions are filled from OpenStreetMap on request.
   - name: Auth

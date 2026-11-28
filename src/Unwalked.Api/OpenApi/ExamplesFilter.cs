@@ -140,7 +140,11 @@ internal sealed class ExamplesFilter : IOperationFilter
             {
                 ["201"] = [new("created", "The Location header points at the share", Share)],
                 ["400"] = [new("contentMismatch", "The bytes are not the declared PNG", """{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","title":"One or more validation errors occurred.","status":400,"errors":{"image.contentType":["Image must be a PNG, JPEG or WebP file matching its declared content type."]},"traceId":"0HNQ6B3DSL1FE:00000001"}""")],
-                ["401"] = [new("noToken", "No Authorization header", MissingToken)],
+                ["401"] =
+                [
+                    new("noToken", "No Authorization header", MissingToken),
+                    new("deletedAccount", "The token belongs to an account deleted since it was issued", """{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.2","title":"Authentication failed.","status":401,"detail":"The account behind this token has been deleted.","traceId":"0HNQ6B3DSL1FG:00000001"}"""),
+                ],
             }),
         ["getShare"] = new(
             Requests: [],
@@ -161,6 +165,12 @@ internal sealed class ExamplesFilter : IOperationFilter
             {
                 ["401"] = [new("noToken", "No Authorization header", MissingToken)],
                 ["404"] = [new("notOwned", "The share belongs to someone else or does not exist", """{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.5","title":"Resource not found.","status":404,"detail":"Share '185affbe-18ad-4510-a624-8945c4c100ff' was not found.","traceId":"0HNQ6B3DSL1FF:00000001"}""")],
+            }),
+        ["deleteAccount"] = new(
+            Requests: [],
+            Responses: new()
+            {
+                ["401"] = [new("noToken", "No Authorization header", MissingToken)],
             }),
     };
 

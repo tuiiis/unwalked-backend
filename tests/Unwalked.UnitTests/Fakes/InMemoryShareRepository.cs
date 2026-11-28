@@ -7,10 +7,17 @@ public sealed class InMemoryShareRepository : IShareRepository
 {
     public Dictionary<Guid, AchievementShare> Shares { get; } = [];
 
-    public Task AddAsync(AchievementShare share, CancellationToken cancellationToken)
+    public HashSet<Guid> DeletedOwners { get; } = [];
+
+    public Task<bool> TryAddAsync(AchievementShare share, CancellationToken cancellationToken)
     {
+        if (DeletedOwners.Contains(share.OwnerId))
+        {
+            return Task.FromResult(false);
+        }
+
         Shares.Add(share.Id, share);
-        return Task.CompletedTask;
+        return Task.FromResult(true);
     }
 
     public Task<AchievementShare?> FindAsync(Guid id, CancellationToken cancellationToken) =>

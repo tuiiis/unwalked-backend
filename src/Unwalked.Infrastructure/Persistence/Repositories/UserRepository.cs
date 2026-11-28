@@ -26,4 +26,7 @@ public sealed class UserRepository(UnwalkedDbContext db) : IUserRepository
             return false;
         }
     }
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) =>
+        await db.Users.Where(user => user.Id == id).ExecuteDeleteAsync(cancellationToken) > 0;
 }
